@@ -1,0 +1,117 @@
+{
+  "name": "TaskToAgent - Email to Discord",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Email to Discord\nEvery new email in this inbox (that passes your filters) is posted to a Discord channel: sender, subject, 300-character preview.\n\n1. Add an IMAP credential. Emails are not marked read or moved.\n2. Edit **Filter** (sender / subject words / exclude).\n3. Paste your Discord webhook URL in **Post to Discord**. Activate.\n\nSeveral inboxes? Duplicate this workflow once per inbox, each with its own credential and webhook.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "a35f5e0b-0e7a-51ed-9350-632e1899d64f",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "nothing",
+        "downloadAttachments": false,
+        "format": "resolved",
+        "options": {
+          "customEmailConfig": "[\"UNSEEN\"]"
+        }
+      },
+      "id": "0122ddd4-1000-593b-ac62-777264b1e53f",
+      "name": "New email (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "imap": {
+          "id": "",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Leave a list empty to allow everything\nconst FROM_CONTAINS = [];          // e.g. ['@client.com', 'stripe']\nconst SUBJECT_CONTAINS = [];       // e.g. ['order', 'booking']\nconst EXCLUDE = ['unsubscribe'];   // skip newsletters\nconst has = (s, list) => list.some(w => (s || '').toLowerCase().includes(w.toLowerCase()));\nreturn $input.all().filter(({ json: e }) => {\n  const from = e.from?.text || ''; const subj = e.subject || ''; const body = e.text || '';\n  if (FROM_CONTAINS.length && !has(from, FROM_CONTAINS)) return false;\n  if (SUBJECT_CONTAINS.length && !has(subj, SUBJECT_CONTAINS)) return false;\n  return !has(`${from} ${subj} ${body}`, EXCLUDE);\n}).map(({ json: e }) => ({ json: { from: e.from?.text || '?', subject: e.subject || '(no subject)', preview: (e.text || '').replace(/\\s+/g, ' ').slice(0, 300) } }));"
+      },
+      "id": "3d69726e-edfa-5ae0-a19b-b97901d8ad96",
+      "name": "Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "PASTE_YOUR_DISCORD_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ username: \"Email to Discord\", allowed_mentions: { parse: [] }, embeds: [{ title: $json.subject.slice(0, 250), description: $json.preview || \"(empty)\", author: { name: $json.from.slice(0, 250) }, color: 5793266 }] }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1000
+            }
+          }
+        }
+      },
+      "id": "41d8dcae-f787-50d1-b23e-3e19d2d91255",
+      "name": "Post to Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "New email (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Post to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "source": "https://tasktoagent.com/agents/"
+  },
+  "tags": []
+}
