@@ -1,0 +1,182 @@
+{
+  "name": "TaskToAgent - Unanswered email nudger (Gmail)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Unanswered email nudger\nWeekdays 08:00: lists emails you sent 3-21 days ago where nobody replied in the thread. It emails the list to YOU. It never writes to anyone else.\n\n1. Add a Gmail OAuth2 credential to the 3 Gmail nodes.\n2. Set your address in **Email me the list**.\n3. Change 3d/21d in **Sent mail** if you like. Activate.\n\nOutlook / any IMAP: use the Python version.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "a35f5e0b-0e7a-51ed-9350-632e1899d64f",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "b24a015f-9349-5759-9a5e-97c346f9c00d",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 200,
+        "filters": {
+          "q": "in:sent newer_than:21d older_than:3d"
+        }
+      },
+      "id": "2e4ff59b-2eca-5874-b8ac-7a024f2c9c96",
+      "name": "Sent mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 500,
+        "filters": {
+          "q": "newer_than:21d -in:sent -in:chats"
+        }
+      },
+      "id": "a0cba4d1-6a9a-536b-83bc-d246c50aa818",
+      "name": "Received mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// A sent email is 'unanswered' if nobody wrote in the same thread after it.\nconst skip = /(no-?reply|notifications?@|mailer-daemon|calendar)/i;\nconst received = $('Received mail').all().map(i => i.json);\nconst lastReply = {};\nfor (const r of received) lastReply[r.threadId] = Math.max(lastReply[r.threadId] || 0, Number(r.internalDate));\nconst latest = {};\nfor (const s of $('Sent mail').all().map(i => i.json)) {\n  if (!latest[s.threadId] || Number(s.internalDate) > Number(latest[s.threadId].internalDate)) latest[s.threadId] = s;\n}\nconst open = Object.values(latest).filter(s => !(lastReply[s.threadId] > Number(s.internalDate)) && !skip.test(s.To || ''));\nconst days = s => Math.floor((Date.now() - Number(s.internalDate)) / 864e5);\nopen.sort((a, b) => Number(a.internalDate) - Number(b.internalDate));\nconst text = open.length\n  ? `${open.length} sent email(s) with no reply after 3+ days:\\n\\n` + open.map(s => `- ${days(s)}d ago -> ${s.To}\\n  ${s.Subject}`).join('\\n') + '\\n\\nNothing was sent to anyone.'\n  : 'No unanswered emails older than 3 days.';\nreturn [{ json: { count: open.length, text } }];"
+      },
+      "id": "7278de38-32c7-565c-b4ca-c9fc846640b2",
+      "name": "Find unanswered",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "you@example.com",
+        "subject": "={{ $json.count }} email(s) waiting for a reply",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "ebdcce32-6976-5793-b532-6224411bd135",
+      "name": "Email me the list",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Sent mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sent mail": {
+      "main": [
+        [
+          {
+            "node": "Received mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Received mail": {
+      "main": [
+        [
+          {
+            "node": "Find unanswered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find unanswered": {
+      "main": [
+        [
+          {
+            "node": "Email me the list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "source": "https://tasktoagent.com/agents/"
+  },
+  "tags": []
+}
