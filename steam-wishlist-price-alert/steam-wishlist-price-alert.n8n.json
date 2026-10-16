@@ -1,0 +1,188 @@
+{
+  "name": "TaskToAgent - Steam wishlist price alert",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Steam wishlist price alert\nEvery 6 hours: checks Steam prices for your games and posts to Discord when one hits your target price or discount. Each price is posted once.\n\n1. Edit app ids + target in **Games to watch**.\n2. Paste your Discord webhook URL in **Post to Discord**.\n3. Activate.\n\nWhole public wishlist, cheapest store via CheapShark, email alerts: use the Python version.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "a35f5e0b-0e7a-51ed-9350-632e1899d64f",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "b24a015f-9349-5759-9a5e-97c346f9c00d",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Steam app ids (the number in store.steampowered.com/app/<id>/) and your target price\nconst GAMES = { '2379780': 'Balatro', '1145350': 'Hades II', '1030300': 'Hollow Knight: Silksong' };\nconst TARGET_PRICE = 10;   // alert at or below this\nconst MIN_DISCOUNT = 50;   // ...or at least this % off\nreturn [{ json: { ids: Object.keys(GAMES).join(','), GAMES, TARGET_PRICE, MIN_DISCOUNT } }];"
+      },
+      "id": "b3831e64-90f7-542a-8a20-1ae8e19bd571",
+      "name": "Games to watch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://store.steampowered.com/api/appdetails?appids={{ $json.ids }}&cc=us&filters=price_overview",
+        "options": {}
+      },
+      "id": "81f05487-d05c-5812-9e4e-91b7909c4628",
+      "name": "Steam prices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Games to watch').first().json; const out = [];\nfor (const [id, v] of Object.entries($json)) {\n  const p = v?.success && v.data?.price_overview; if (!p) continue;\n  const price = p.final / 100;\n  if (price <= cfg.TARGET_PRICE || p.discount_percent >= cfg.MIN_DISCOUNT)\n    out.push({ json: { id, name: cfg.GAMES[id] || `App ${id}`, key: `${id}:${p.final}`, price: `${price.toFixed(2)} ${p.currency}`, cut: p.discount_percent, url: `https://store.steampowered.com/app/${id}/` } });\n}\nreturn out;"
+      },
+      "id": "c93f9bb5-4bc7-567a-9386-5fddc773626a",
+      "name": "Find price drops",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "logic": "removeItemsWithAlreadySeenKeyValues",
+        "dedupeValue": "={{ $json.key }}",
+        "options": {}
+      },
+      "id": "79ff30c5-8ee1-5579-88b1-22cbb3bea879",
+      "name": "Only new",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "PASTE_YOUR_DISCORD_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ username: \"Wishlist Price Alert\", allowed_mentions: { parse: [] }, content: \"🎮 **\" + $json.name + \"**: \" + $json.price + ($json.cut ? \" (-\" + $json.cut + \"%)\" : \"\") + \"\\n\" + $json.url }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1000
+            }
+          }
+        }
+      },
+      "id": "41d8dcae-f787-50d1-b23e-3e19d2d91255",
+      "name": "Post to Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Games to watch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Games to watch": {
+      "main": [
+        [
+          {
+            "node": "Steam prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Steam prices": {
+      "main": [
+        [
+          {
+            "node": "Find price drops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find price drops": {
+      "main": [
+        [
+          {
+            "node": "Only new",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only new": {
+      "main": [
+        [
+          {
+            "node": "Post to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "source": "https://tasktoagent.com/agents/"
+  },
+  "tags": []
+}
