@@ -1,0 +1,162 @@
+{
+  "name": "TaskToAgent - AI news digest",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## AI news digest\nEvery day at 07:00 this reads AI feeds, keeps the last 24h and emails you a list.\n\n1. Edit feeds in **Feed list**.\n2. Open **Email me**, add SMTP credentials, set from/to.\n3. Activate.\n\nWant AI summaries? Use the Python version (OPENAI_API_KEY).",
+        "height": 300,
+        "width": 420
+      },
+      "id": "a35f5e0b-0e7a-51ed-9350-632e1899d64f",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b24a015f-9349-5759-9a5e-97c346f9c00d",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Edit your feeds here\nconst feeds = [\n \"https://hnrss.org/newest?q=AI+OR+LLM+OR+agent&points=50\",\n \"https://huggingface.co/blog/feed.xml\",\n \"https://simonwillison.net/atom/everything/\",\n \"https://openai.com/news/rss.xml\"\n];\nreturn feeds.map(url => ({ json: { url } }));"
+      },
+      "id": "82da1579-2e02-5196-9528-814f2f34f7e6",
+      "name": "Feed list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "ignoreSSL": false
+        }
+      },
+      "id": "c56097c8-f124-57de-8d6e-225a231daec3",
+      "name": "Read RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cutoff = Date.now() - 24*3600*1000;\nconst seen = new Set();\nconst items = $input.all().map(i => i.json)\n  .filter(i => i.link && !seen.has(i.link) && seen.add(i.link))\n  .filter(i => !i.isoDate || new Date(i.isoDate).getTime() > cutoff)\n  .sort((a,b) => new Date(b.isoDate||0) - new Date(a.isoDate||0)).slice(0, 12);\nconst text = items.length ? items.map(i => `- ${i.title}\\n  ${i.link}`).join('\\n') : 'Nothing new in the last 24 hours.';\nreturn [{ json: { subject: 'Your AI news digest', text: `AI news digest\\n\\n${text}\\n\\n-- built with TaskToAgent: https://tasktoagent.com/agents/` } }];"
+      },
+      "id": "bc285786-1b2f-512f-b7c1-76069f421f33",
+      "name": "Build digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "you@example.com",
+        "toEmail": "you@example.com",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "7ad3fe6a-29f0-5676-8b19-83eabbed6e2b",
+      "name": "Email me",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Feed list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feed list": {
+      "main": [
+        [
+          {
+            "node": "Read RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read RSS": {
+      "main": [
+        [
+          {
+            "node": "Build digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build digest": {
+      "main": [
+        [
+          {
+            "node": "Email me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "source": "https://tasktoagent.com/agents/"
+  },
+  "tags": []
+}

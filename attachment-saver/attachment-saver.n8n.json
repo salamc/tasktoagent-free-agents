@@ -1,0 +1,108 @@
+{
+  "name": "TaskToAgent - Email attachment saver",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Email attachment saver\nWhen a new email arrives (IMAP), saves its attachments to /home/node/attachments/YYYY-MM/sender/.\n\n1. Add an IMAP credential (Gmail: app password, imap.gmail.com).\n2. Change the folder path in **One item per attachment** if you like (self-hosted n8n only; on n8n Cloud swap Save file for a Google Drive / Dropbox upload node).\n3. Activate. Emails are not marked read or moved.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "a35f5e0b-0e7a-51ed-9350-632e1899d64f",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "nothing",
+        "downloadAttachments": true,
+        "format": "resolved",
+        "options": {
+          "customEmailConfig": "[\"UNSEEN\"]"
+        }
+      },
+      "id": "0122ddd4-1000-593b-ac62-777264b1e53f",
+      "name": "New email (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "imap": {
+          "id": "",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep these file types\nconst exts = ['pdf','png','jpg','jpeg','docx','xlsx','csv','zip'];\nconst out = [];\nfor (const item of $input.all()) {\n  const from = (item.json.from?.value?.[0]?.address || 'unknown').replace(/[^\\w.@+-]/g, '_');\n  const month = new Date(item.json.date || Date.now()).toISOString().slice(0, 7);\n  for (const [key, bin] of Object.entries(item.binary || {})) {\n    const name = (bin.fileName || key).replace(/[^\\w.@+-]+/g, '_');\n    if (!exts.includes(name.split('.').pop().toLowerCase())) continue;\n    out.push({ json: { path: `/home/node/attachments/${month}/${from}/${name}` }, binary: { data: bin } });\n  }\n}\nreturn out;"
+      },
+      "id": "769caaaf-d44e-5fe5-a607-c690a25a7428",
+      "name": "One item per attachment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $json.path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "66987ad7-bd70-5244-9a12-0413d817889b",
+      "name": "Save file",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "New email (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "One item per attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One item per attachment": {
+      "main": [
+        [
+          {
+            "node": "Save file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "source": "https://tasktoagent.com/agents/"
+  },
+  "tags": []
+}

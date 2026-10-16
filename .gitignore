@@ -1,0 +1,5 @@
+.env
+*.state.json
+saved_attachments/
+run.log
+__pycache__/

@@ -1,0 +1,144 @@
+{
+  "name": "TaskToAgent - Inbox summariser (Gmail)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Inbox summariser\nEvery day at 08:00: reads unread Gmail from the last 24h (does NOT mark as read) and emails you a short summary.\n\n1. Add a Gmail OAuth2 credential to both Gmail nodes.\n2. Set your address in **Email me the summary**.\n3. Activate.\n\nAny IMAP inbox + AI summaries: use the Python version.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "a35f5e0b-0e7a-51ed-9350-632e1899d64f",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b24a015f-9349-5759-9a5e-97c346f9c00d",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 40,
+        "filters": {
+          "q": "is:unread newer_than:1d -category:promotions"
+        }
+      },
+      "id": "9794b233-fe1f-5b62-bd47-71f2765c3ca1",
+      "name": "Get unread emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json);\nconst bulk = /(no-?reply|newsletter|notification|mailer|digest)/i;\nconst from = m => (m.From || m.from?.text || '');\nconst people = items.filter(m => !bulk.test(from(m)));\nconst other = items.filter(m => bulk.test(from(m)));\nconst line = m => `- ${from(m)}: ${m.Subject || m.subject}\\n  ${(m.snippet||'').slice(0,140)}`;\nconst text = `Inbox summary - ${items.length} unread in the last 24h\\n\\nFrom people:\\n${people.map(line).join('\\n') || '- none'}\\n\\nNewsletters / notifications (${other.length}):\\n${other.map(m => '- ' + (m.Subject||m.subject)).join('\\n')}`;\nreturn [{ json: { text } }];"
+      },
+      "id": "41feded7-e707-5003-b923-8a89ca58e6c3",
+      "name": "Build summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "you@example.com",
+        "subject": "Your inbox summary",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "31d85a64-6461-5ba0-8c58-dd26343368f3",
+      "name": "Email me the summary",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Get unread emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get unread emails": {
+      "main": [
+        [
+          {
+            "node": "Build summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build summary": {
+      "main": [
+        [
+          {
+            "node": "Email me the summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "source": "https://tasktoagent.com/agents/"
+  },
+  "tags": []
+}

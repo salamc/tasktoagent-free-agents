@@ -1,0 +1,23 @@
+From: Steam <noreply@steampowered.com>
+To: you@example.com
+Subject: A game on your wishlist is on sale
+Date: Thu, 15 Oct 2026 09:12:00 +0100
+List-Unsubscribe: <mailto:u@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============5500577034880217001=="
+
+--===============5500577034880217001==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+plain fallback
+
+--===============5500577034880217001==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+<p>Hades II is <b>-30%</b></p>
+
+--===============5500577034880217001==--
