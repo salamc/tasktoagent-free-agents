@@ -1,0 +1,207 @@
+{
+  "name": "TaskToAgent - n8n error alert + nightly backup",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## n8n error alert + nightly backup\n**Alerts:** paste your Discord webhook in **Post to Discord**, save, then in EACH workflow you care about: Settings > Error workflow > pick this one. (Alerts fire for production runs, not manual tests.)\n\n**Backup:** Settings > n8n API > create a key, add it as an n8n credential in **Get all workflows**. Every night all workflows go into one file, /home/node/.n8n-files/n8n-backup-DATE.json (self-hosted only; create the folder once: `mkdir -p ~/.n8n-files`, n8n 2.x only writes inside it).\n\nWant git history + push to GitHub? Use the Python version (backup mode). Activate.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "a35f5e0b-0e7a-51ed-9350-632e1899d64f",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f8c50ea0-ae22-5b49-8107-fa1bdab2ebd3",
+      "name": "When any workflow fails",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e = $json.execution || {}; const w = $json.workflow || {};\nconst msg = `🚨 **${w.name || 'A workflow'}** failed` + (e.lastNodeExecuted ? ` at node **${e.lastNodeExecuted}**` : '') + `\\n${(e.error?.message || 'no error message').slice(0, 500)}` + (e.url ? `\\n${e.url}` : '') + `\\nmode: ${e.mode || '?'}`;\nreturn [{ json: { content: msg } }];"
+      },
+      "id": "1080a17c-430f-513e-88a4-8bbe6b7620e9",
+      "name": "Format alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "PASTE_YOUR_DISCORD_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ username: \"n8n alerts\", content: $json.content, allowed_mentions: { parse: [] } }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1000
+            }
+          }
+        }
+      },
+      "id": "41d8dcae-f787-50d1-b23e-3e19d2d91255",
+      "name": "Post to Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "3a0f5b1e-7c1d-5b8e-9a51-2f4b6c1d0e01",
+      "name": "Every night 02:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "workflow",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {}
+      },
+      "id": "8ac179ff-2bfc-59eb-a2a7-f337f2f44c1d",
+      "name": "Get all workflows",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        220,
+        140
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "",
+          "name": "n8n account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// One JSON file per night with every workflow (credential secrets are never included by the n8n API)\nconst day = new Date().toISOString().slice(0, 10);\nconst drop = ['updatedAt','createdAt','versionId','activeVersionId','triggerCount','shared','homeProject','activeVersion','meta'];\nconst all = $input.all().map(({ json: w }) => Object.fromEntries(Object.entries(w).filter(([k]) => !drop.includes(k))));\nconst fileName = `n8n-backup-${day}.json`;\nreturn [{ json: { path: `/home/node/.n8n-files/${fileName}`, count: all.length },\n         binary: { data: { data: Buffer.from(JSON.stringify(all, null, 2)).toString('base64'), mimeType: 'application/json', fileName } } }];"
+      },
+      "id": "1d9890a4-471c-52b5-959e-1c3ebc3d4b67",
+      "name": "One file per workflow",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $json.path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "7363e2bd-74b8-55d6-9d39-37667316c83f",
+      "name": "Save backup file",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        660,
+        140
+      ]
+    }
+  ],
+  "connections": {
+    "When any workflow fails": {
+      "main": [
+        [
+          {
+            "node": "Format alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format alert": {
+      "main": [
+        [
+          {
+            "node": "Post to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every night 02:00": {
+      "main": [
+        [
+          {
+            "node": "Get all workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get all workflows": {
+      "main": [
+        [
+          {
+            "node": "One file per workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One file per workflow": {
+      "main": [
+        [
+          {
+            "node": "Save backup file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "source": "https://tasktoagent.com/agents/"
+  },
+  "tags": []
+}
