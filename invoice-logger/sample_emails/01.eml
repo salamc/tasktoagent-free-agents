@@ -1,0 +1,35 @@
+From: Acme Hosting Billing <billing@acmehost.example>
+To: me@example.com
+Subject: Your invoice INV-2026-0931
+Date: Thu, 01 Oct 2026 08:00:00 +0000
+Message-ID: <01@sample>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============2445155993287327210=="
+
+--===============2445155993287327210==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Hi, your invoice is attached. Thanks!
+
+--===============2445155993287327210==
+Content-Type: application/pdf
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="INV-2026-0931.pdf"
+MIME-Version: 1.0
+
+JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2Jq
+CjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2Jq
+CjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIg
+NzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4g
+Pj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAxMzggL0ZpbHRlciAvRmxhdGVEZWNvZGUg
+Pj4Kc3RyZWFtCnicdYyxCsIwGIRf5YYMOkT/RK3YTUGxIC7+uKdNlIpNQBPx8S0Zqw633PfdbRjT
+nYLS4AsWhGUfthitm85hH56x9Vccoh2DbyBIVWRc+VdoGwefuto9SlTHs9SkC0mrmfrjWhNdiWwp
+kjTUTqmOIZo7hKYJ0YCyeUPMf/R5YlP/LPQ33/IH4445RgplbmRzdHJlYW0KZW5kb2JqCjUgMCBv
+YmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+
+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAK
+MDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAg
+biAKMDAwMDAwMDQ1MSAwMDAwMCBuIAp0cmFpbGVyIDw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4K
+c3RhcnR4cmVmCjUyMQolJUVPRgo=
+
+--===============2445155993287327210==--

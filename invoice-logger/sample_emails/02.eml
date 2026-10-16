@@ -1,0 +1,13 @@
+From: Figma <receipts@figma.example>
+To: me@example.com
+Subject: Receipt for your payment
+Date: Mon, 05 Oct 2026 10:00:00 +0000
+Message-ID: <02@sample>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+Receipt #2291-4410
+Professional plan x1  15,00 €
+VAT 3,00 €
+Total paid: 18,00 €

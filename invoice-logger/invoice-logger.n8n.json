@@ -1,0 +1,126 @@
+{
+  "name": "TaskToAgent - Invoice & receipt logger",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Invoice & receipt logger\nNew email with 'invoice'/'receipt' in the subject or file name -> one row in Google Sheets: date, vendor, amount, currency, invoice no.\n\n1. Add an IMAP credential (Gmail: app password). Emails are not marked read.\n2. Make a Sheet with headers: date, vendor, amount, currency, invoice_no, subject, from, attachments. Paste its URL in **Add row** and add a Google Sheets credential.\n3. Activate.\n\nAmounts inside PDFs: use the Python version.",
+        "height": 300,
+        "width": 420
+      },
+      "id": "a35f5e0b-0e7a-51ed-9350-632e1899d64f",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "nothing",
+        "downloadAttachments": false,
+        "format": "resolved",
+        "options": {
+          "customEmailConfig": "[\"UNSEEN\"]"
+        }
+      },
+      "id": "0122ddd4-1000-593b-ac62-777264b1e53f",
+      "name": "New email (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "imap": {
+          "id": "",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const KEYWORDS = ['invoice','receipt','facture','rechnung','order confirmation','payment received'];\nconst CUR = {'$':'USD','€':'EUR','£':'GBP'};\nconst num = s => { s = s.replace(/\\s/g,''); const m = s.match(/^(.*?)[.,](\\d{2})$/); return m ? parseFloat(m[1].replace(/[.,]/g,'') + '.' + m[2]) : parseFloat(s.replace(/[.,]/g,'')); };\nconst out = [];\nfor (const { json: e } of $input.all()) {\n  const subject = e.subject || ''; const text = `${subject}\\n${e.text || (e.html || '').replace(/<[^>]+>/g,' ')}`;\n  const atts = (e.attachments || []).map(a => a.filename).join('; ');\n  if (!KEYWORDS.some(k => `${subject} ${atts}`.toLowerCase().includes(k))) continue;\n  const totals = [...text.matchAll(/(grand total|total due|amount due|total paid|amount paid|total|amount)[^0-9$€£\\n]{0,25}([$€£]|USD|EUR|GBP)?\\s?([0-9][0-9 .,]*[0-9])\\s?([$€£]|USD|EUR|GBP)?/gi)];\n  const t = totals[totals.length - 1];\n  const inv = text.match(/(invoice|receipt|order|facture)\\s*(?:confirmation\\s*)?(?:no\\.?|number|#|id)\\s*[:#]?\\s*([A-Z0-9][A-Z0-9\\-\\/]{2,})/i);\n  const from = e.from?.value?.[0] || {};\n  out.push({ json: {\n    date: new Date(e.date || Date.now()).toISOString().slice(0, 10),\n    vendor: (from.name || (from.address || '').split('@')[1] || '').replace(/\\b(billing|invoices?|receipts?|orders?|no-?reply|team)\\b/gi, '').trim(),\n    amount: t ? num(t[3]).toFixed(2) : '',\n    currency: t ? (CUR[t[2] || t[4]] || (t[2] || t[4] || '')).toUpperCase() : '',\n    invoice_no: inv ? inv[2] : '', subject, from: from.address || '', attachments: atts,\n  } });\n}\nreturn out;"
+      },
+      "id": "c0beeeaf-2024-58e9-81da-55c5c97dc0e4",
+      "name": "Parse invoice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "PASTE_YOUR_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "0fca42e7-b0b4-5249-bbcf-7f493b728637",
+      "name": "Add row to Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "New email (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Parse invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse invoice": {
+      "main": [
+        [
+          {
+            "node": "Add row to Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "source": "https://tasktoagent.com/agents/"
+  },
+  "tags": []
+}
