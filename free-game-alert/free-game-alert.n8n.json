@@ -103,7 +103,8 @@
     },
     {
       "parameters": {
-        "operation": "removeItemsRepeatedInPreviousExecutions",
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "logic": "removeItemsWithAlreadySeenKeyValues",
         "dedupeValue": "={{ $json.id }}",
         "options": {}
       },

@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Email attachment saver\nWhen a new email arrives (IMAP), saves its attachments to /home/node/attachments/YYYY-MM/sender/.\n\n1. Add an IMAP credential (Gmail: app password, imap.gmail.com).\n2. Change the folder path in **One item per attachment** if you like (self-hosted n8n only; on n8n Cloud swap Save file for a Google Drive / Dropbox upload node).\n3. Activate. Emails are not marked read or moved.",
+        "content": "## Email attachment saver\nWhen a new email arrives (IMAP), saves its attachments to /home/node/.n8n-files/attachments/ as YYYY-MM__sender__file.\n\n1. Add an IMAP credential (Gmail: app password, imap.gmail.com).\n2. Create the folder once: `mkdir -p ~/.n8n-files/attachments` (n8n 2.x only writes inside ~/.n8n-files and won't create folders). Self-hosted n8n only; on n8n Cloud swap Save file for a Google Drive / Dropbox upload node.\n3. Activate. Emails are not marked read or moved.",
         "height": 300,
         "width": 420
       },
@@ -43,7 +43,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Keep these file types\nconst exts = ['pdf','png','jpg','jpeg','docx','xlsx','csv','zip'];\nconst out = [];\nfor (const item of $input.all()) {\n  const from = (item.json.from?.value?.[0]?.address || 'unknown').replace(/[^\\w.@+-]/g, '_');\n  const month = new Date(item.json.date || Date.now()).toISOString().slice(0, 7);\n  for (const [key, bin] of Object.entries(item.binary || {})) {\n    const name = (bin.fileName || key).replace(/[^\\w.@+-]+/g, '_');\n    if (!exts.includes(name.split('.').pop().toLowerCase())) continue;\n    out.push({ json: { path: `/home/node/attachments/${month}/${from}/${name}` }, binary: { data: bin } });\n  }\n}\nreturn out;"
+        "jsCode": "// Keep these file types\nconst exts = ['pdf','png','jpg','jpeg','docx','xlsx','csv','zip'];\nconst out = [];\nfor (const item of $input.all()) {\n  const from = (item.json.from?.value?.[0]?.address || 'unknown').replace(/[^\\w.@+-]/g, '_');\n  const month = new Date(item.json.date || Date.now()).toISOString().slice(0, 7);\n  for (const [key, bin] of Object.entries(item.binary || {})) {\n    const name = (bin.fileName || key).replace(/[^\\w.@+-]+/g, '_');\n    if (!exts.includes(name.split('.').pop().toLowerCase())) continue;\n    // n8n 2.x only writes inside ~/.n8n-files and doesn't create sub-folders, so the folder structure goes into the file name\n    out.push({ json: { path: `/home/node/.n8n-files/attachments/${month}__${from}__${name}` }, binary: { data: bin } });\n  }\n}\nreturn out;"
       },
       "id": "769caaaf-d44e-5fe5-a607-c690a25a7428",
       "name": "One item per attachment",

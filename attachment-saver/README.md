@@ -48,7 +48,7 @@ Page: https://tasktoagent.com/agents/attachment-saver/ · Made by TaskToAgent (h
 ## Honest limits
 - Not tested against a real mailbox (needs your login).
 - It never deletes or moves emails. That's on purpose.
-- The n8n version writes to disk, so it needs self-hosted n8n. On n8n Cloud, swap the last node for a Google Drive or Dropbox upload.
+- The n8n version writes to disk, so it needs self-hosted n8n. n8n 2.x only writes inside ~/.n8n-files and won't create folders, so create ~/.n8n-files/attachments once (fixed 16 Oct 2026; the earlier file used a folder n8n 2.x refuses). On n8n Cloud, swap the last node for a Google Drive or Dropbox upload.
 
 ## Want a custom version?
 Describe your task in one sentence at https://tasktoagent.com/ and we'll build and test it for you.

@@ -42,6 +42,7 @@ Page: https://tasktoagent.com/agents/rss-to-discord/ · Made by TaskToAgent (htt
 - First run remembered 20 items and posted nothing; a later run posted only the new ones to a mock Discord webhook.
 - Handles Discord rate limits (HTTP 429, then retry).
 - n8n workflow imported and run end to end in a real n8n install (Discord mocked).
+- 16 Oct 2026 fix: the n8n file's 'Only new' step had a wrong setting and could repost old items. Fixed and re-tested as an active workflow. Please re-download if you got it earlier.
 
 ## Honest limits
 - Reddit often rate-limits feed readers (HTTP 429). The script skips it and tries again next run.

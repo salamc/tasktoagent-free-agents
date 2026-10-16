@@ -45,6 +45,7 @@ Page: https://tasktoagent.com/agents/free-game-alert/ · Made by TaskToAgent (ht
 - Posted to a mock Discord webhook: batches of 10 embeds, correct JSON.
 - Second run posted nothing (dedupe works).
 - n8n workflow imported and run end to end in a real n8n install, posting 14 alerts to a mock Discord webhook.
+- 16 Oct 2026 fix: the n8n file's 'Only new' step had a wrong setting and could repost old games. Fixed and re-tested as an active workflow (the second run posts nothing). Please re-download if you got it earlier.
 
 ## Honest limits
 - The IsThereAnyDeal part needs your own free key, so we couldn't test it live; the code follows ITAD's documented v1/v3 endpoints.

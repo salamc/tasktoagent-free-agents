@@ -3,3 +3,8 @@
 saved_attachments/
 run.log
 __pycache__/
+seen_*.json
+*_state.json
+price_state.json
+invoices.csv
+n8n-backup/
