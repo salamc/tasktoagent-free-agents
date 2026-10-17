@@ -1,0 +1,6 @@
+[
+ {"name": "nightly-backup", "type": "file", "target": "/var/backups/backup.ok", "max_age": "26h"},
+ {"name": "price-scraper", "type": "ping", "target": "price-scraper", "max_age": "2h"},
+ {"name": "n8n order sync", "type": "n8n", "target": "PUT_WORKFLOW_ID_HERE", "max_age": "30m"},
+ {"name": "my website", "type": "url", "target": "https://example.com/"}
+]

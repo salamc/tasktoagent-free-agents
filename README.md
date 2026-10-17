@@ -1,6 +1,6 @@
 # Free AI agents & automations (n8n + Python)
 
-Ten small, **tested** automations from [TaskToAgent](https://tasktoagent.com). Each one comes as an **n8n workflow** (import and click Active) and a **single-file Python script** (standard library only, nothing to `pip install`). Every script has a `--dry-run` mode so you can see what it does before giving it any credentials.
+Eleven small, **tested** automations from [TaskToAgent](https://tasktoagent.com). Each one comes as an **n8n workflow** (import and click Active) and a **single-file Python script** (standard library only, nothing to `pip install`). Every script has a `--dry-run` mode so you can see what it does before giving it any credentials.
 
 | Agent | What it does | Guide |
 |---|---|---|
@@ -14,6 +14,7 @@ Ten small, **tested** automations from [TaskToAgent](https://tasktoagent.com). E
 | [email-to-discord](email-to-discord/) | Posts new emails from one or more IMAP inboxes to Discord, with per-inbox filters | [Forward email to Discord](https://tasktoagent.com/guides/forward-email-to-discord/) |
 | [n8n-error-alert-and-backup](n8n-error-alert-and-backup/) | n8n error workflow → Discord alert, plus nightly export of all workflows to git | [n8n error workflow + backup](https://tasktoagent.com/guides/n8n-error-workflow-and-backup/) |
 | [steam-wishlist-price-alert](steam-wishlist-price-alert/) | Discord/email alert when a Steam wishlist game hits your price (Steam + CheapShark, no key) | [Steam wishlist price alerts](https://tasktoagent.com/guides/steam-wishlist-price-drop-alert-discord/) |
+| [heartbeat-watchdog](heartbeat-watchdog/) | Dead man's switch: Discord/email alert when a cron job, backup or n8n workflow silently stops running | [Alert when a cron job stops running](https://tasktoagent.com/guides/alert-when-cron-job-or-n8n-workflow-stops-running/) |
 
 ## Quick start
 ```bash

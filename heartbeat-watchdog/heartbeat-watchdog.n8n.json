@@ -1,0 +1,138 @@
+{
+ "name": "Heartbeat watchdog (TaskToAgent)",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Heartbeat watchdog (dead man's switch)\nAlerts Discord when a job that should run on a schedule **stops** running. Error workflows can't catch that, because nothing errors.\n\n1. Edit **Heartbeats to watch**: one line per job, with how many minutes it may go quiet.\n2. Paste your Discord webhook URL in **Post to Discord**.\n3. Save and switch the workflow to **Active** (the memory only works in active mode).\n4. At the END of each job, call the Production URL of **Heartbeat ping** with `?name=<job>`:\n   cron: `... && curl -fsS \"https://YOUR-N8N/webhook/heartbeat?name=nightly-backup\"`\n   n8n: add an HTTP Request node (GET) as the last step.\n\nYou get one alert when a heartbeat goes missing and one when it comes back. If n8n itself goes down it can't alert you: for that, run the Python version on another machine.",
+    "height": 420,
+    "width": 460
+   },
+   "id": "9bcddaca-f6e2-5057-9101-5057437fb340",
+   "name": "Read me",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -520,
+    -300
+   ]
+  },
+  {
+   "parameters": {
+    "path": "heartbeat",
+    "options": {}
+   },
+   "id": "9d10dcaa-80fb-5e56-88d8-d5aecc8cd469",
+   "name": "Heartbeat ping",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    0,
+    -160
+   ],
+   "webhookId": "fdd96bd1-d6fc-5c6a-a26a-1ca61b77f898"
+  },
+  {
+   "parameters": {
+    "jsCode": "// Remembers when each job last checked in. Called by GET /webhook/heartbeat?name=<job>\nconst mem = $getWorkflowStaticData('global');\nmem.last = mem.last || {};\nconst out = [];\nfor (const item of $input.all()) {\n  const name = String((item.json.query || {}).name || '').trim().slice(0, 64);\n  if (!name) { out.push({ json: { ok: false, error: 'add ?name=<job> to the URL' } }); continue; }\n  mem.last[name] = Date.now();\n  out.push({ json: { ok: true, name, at: new Date().toISOString() } });\n}\nreturn out;"
+   },
+   "id": "fd3617ad-9f6c-5f8a-a002-239abbf58caf",
+   "name": "Remember check-in",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    240,
+    -160
+   ]
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes",
+       "minutesInterval": 5
+      }
+     ]
+    }
+   },
+   "id": "1b8a3126-7fef-57e0-94b7-33a56712b506",
+   "name": "Every 5 minutes",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    120
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// One line per job: name (same as ?name=...) and how many minutes it may stay quiet.\nconst HEARTBEATS = [\n  { name: 'nightly-backup', maxMinutes: 26 * 60 },\n  { name: 'price-scraper',  maxMinutes: 120 },\n];\nconst mem = $getWorkflowStaticData('global');\nmem.last = mem.last || {}; mem.down = mem.down || {};\nif (!mem.since) mem.since = Date.now(); // jobs never seen get a grace period from first activation\nconst now = Date.now(), lines = [];\nfor (const hb of HEARTBEATS) {\n  const seen = mem.last[hb.name];\n  const age = (now - (seen || mem.since)) / 60000;\n  const late = age > hb.maxMinutes;\n  const when = seen ? `${Math.round(age)} min ago` : 'never';\n  if (late && !mem.down[hb.name]) { mem.down[hb.name] = true; lines.push(`🔴 ${hb.name}: no heartbeat for ${hb.maxMinutes} min (last: ${when})`); }\n  if (!late && mem.down[hb.name]) { delete mem.down[hb.name]; lines.push(`🟢 ${hb.name} is back (last: ${when})`); }\n}\nif (!lines.length) return []; // nothing changed: stop here, no alert\nreturn [{ json: { content: ('Heartbeat watchdog\\n' + lines.join('\\n')).slice(0, 1990) } }];"
+   },
+   "id": "4ce145ed-d528-5f0d-b9f2-b99350e71bb0",
+   "name": "Heartbeats to watch",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    240,
+    120
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://discord.com/api/webhooks/PASTE_YOUR_WEBHOOK_HERE",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ username: 'Heartbeat watchdog', content: $json.content, allowed_mentions: { parse: [] } }) }}",
+    "options": {}
+   },
+   "id": "b179649b-71df-5fda-8c70-ba5ce0dc4425",
+   "name": "Post to Discord",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    480,
+    120
+   ]
+  }
+ ],
+ "connections": {
+  "Heartbeat ping": {
+   "main": [
+    [
+     {
+      "node": "Remember check-in",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Every 5 minutes": {
+   "main": [
+    [
+     {
+      "node": "Heartbeats to watch",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Heartbeats to watch": {
+   "main": [
+    [
+     {
+      "node": "Post to Discord",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {}
+}
