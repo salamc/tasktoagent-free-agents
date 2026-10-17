@@ -28,6 +28,13 @@ n8n: **Workflows → Import from file → `<agent>.n8n.json`**, then follow the 
 
 Each folder's README lists what we tested and the **honest limits**, meaning what we couldn't test without real credentials.
 
+## More guides
+- [n8n: stop posting the same item twice (Remove Duplicates across executions)](https://tasktoagent.com/guides/n8n-remove-duplicates-previous-executions/), the bug we hit in our own RSS and free-games workflows and how we fixed it
+- [Post new YouTube videos to Discord automatically](https://tasktoagent.com/guides/youtube-uploads-to-discord/)
+- [Discord webhooks for beginners](https://tasktoagent.com/guides/discord-webhook-beginners/)
+- [How to build an AI agent without coding](https://tasktoagent.com/guides/build-ai-agent-without-coding/)
+- [Run a Python script on a schedule](https://tasktoagent.com/guides/run-python-script-on-schedule/) (cron, Task Scheduler, GitHub Actions)
+
 ## Want one for your own task?
 Describe it in one sentence at **https://tasktoagent.com** and we'll build it, test it and send you the files plus a setup guide.
 
