@@ -7,6 +7,7 @@ import os, sys, json, time, html, re, urllib.request, urllib.error, xml.etree.El
 
 FEEDS = [f.strip() for f in (os.getenv("FEEDS") or "https://hnrss.org/frontpage,https://www.rockpapershotgun.com/feed").split(",") if f.strip()]
 KEYWORDS = [k.strip().lower() for k in os.getenv("KEYWORDS", "").split(",") if k.strip()]  # empty = post everything
+EXCLUDE = [k.strip().lower() for k in os.getenv("EXCLUDE", "").split(",") if k.strip()]  # skip items whose title or link contains any of these, e.g. -rc,beta
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL", "")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")  # e.g. 123456789, -100123... for groups/channels, or @yourchannel
@@ -31,7 +32,9 @@ def items(url):
         yield {"id": (e.findtext(A + "id") or href).strip(), "title": clean(e.findtext(A + "title")), "link": href,
                "text": clean(e.findtext(A + "summary") or e.findtext(A + "content"))}
 
-def matches(i): return not KEYWORDS or any(k in (i["title"] + " " + i["text"]).lower() for k in KEYWORDS)
+def matches(i):
+    if any(x in (i["title"] + " " + i["link"]).lower() for x in EXCLUDE): return False
+    return not KEYWORDS or any(k in (i["title"] + " " + i["text"]).lower() for k in KEYWORDS)
 
 def send(url, payload):
     req = urllib.request.Request(url, json.dumps(payload).encode(), {**UA, "Content-Type": "application/json"})
