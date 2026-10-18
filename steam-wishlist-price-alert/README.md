@@ -1,14 +1,14 @@
-# Steam wishlist price alert - free TaskToAgent agent
+# Steam wishlist price alert (Discord, Telegram, Slack) - free TaskToAgent agent
 
-> **Task:** "Ping my Discord when a game on my Steam wishlist drops below my price or hits a big sale."
+> **Task:** "Ping my Discord (or Telegram, or Slack) when a game on my Steam wishlist drops below my price or hits a big sale."
 
-Reads your public Steam wishlist (or a list of games you type in), checks Steam prices and the cheapest current deal across stores via CheapShark, and alerts Discord or email when a game hits your target price, a big discount, or a new low since the last check. Each drop is sent once. It needs no API keys and pairs with our free game alert.
+Reads your public Steam wishlist (or a list of games you type in), checks Steam prices and the cheapest current deal across stores via CheapShark, and alerts a Discord channel, a Telegram chat, group or channel, Slack and/or email when a game hits your target price, a big discount, or a new low since the last check. Each drop is sent once. It needs no API keys and pairs with our free game alert.
 
 Page: https://tasktoagent.com/agents/steam-wishlist-price-alert/ · Made by TaskToAgent (https://tasktoagent.com) · MIT licence
 
 ## What you need
 - Python 3.9+ (no extra packages) or n8n
-- A Discord webhook (or an email account)
+- Where to post: a Discord webhook, a Telegram bot token + chat ID (from @BotFather), a Slack incoming webhook, or an email account (any one, or several; Telegram and Slack are in the Python script)
 - Optional: your SteamID64, with the wishlist set to public
 
 ## 5-minute setup (Python)
@@ -28,7 +28,10 @@ Page: https://tasktoagent.com/agents/steam-wishlist-price-alert/ · Made by Task
 | `MIN_DISCOUNT` | ...or at least this % off, default 50 |
 | `ALERT_NEW_LOW` | Alert when cheaper than last check, default 1 |
 | `COUNTRY` | Steam store country, default us |
-| `DISCORD_WEBHOOK_URL / EMAIL_TO` | Where alerts go |
+| `DISCORD_WEBHOOK_URL` | Your Discord webhook (leave every destination empty to just print) |
+| `TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID` | Optional: Telegram bot token from @BotFather and the chat, group or channel ID (or @channelname) |
+| `SLACK_WEBHOOK_URL` | Optional: Slack incoming webhook URL |
+| `EMAIL_TO / SMTP_HOST / SMTP_USER / SMTP_PASSWORD` | Optional: email the alerts instead or as well |
 
 ## Run it on a schedule (every 6 hours)
 - **macOS/Linux (cron):** `crontab -e`, then add
@@ -46,13 +49,15 @@ Page: https://tasktoagent.com/agents/steam-wishlist-price-alert/ · Made by Task
 - Read a real public Steam wishlist through Steam's public wishlist API.
 - Posted to a mock Discord webhook; a second run at the same price sent nothing, and a lower price was flagged as a new low.
 - n8n workflow run in a real n8n install as an active workflow: the first run posted 3 alerts to a mock Discord webhook and later runs posted nothing new.
+- 18 Oct 2026: added Telegram and Slack outputs and rate-limit (429) retries. Tested with live Steam and CheapShark prices (Balatro, Hades II, Hollow Knight) against mock Discord, Telegram and Slack servers that each answered 429 first: one message to each, cheaper-elsewhere links included, nothing repeated on the next run. With Slack down, Discord and Telegram still got it and it wasn't repeated; with every destination down, nothing was marked as sent, so it retried on the next run.
 
 ## Honest limits
 - Private wishlists can't be read: set Steam, then Privacy, then Game details to Public, or list the games yourself.
 - CheapShark prices are in USD and cover PC key stores; Steam prices use your COUNTRY.
 - Unofficial but public Steam endpoints: they can change or rate-limit.
 - The n8n version checks Steam prices for the app ids you list (no wishlist import or CheapShark).
-- Tested with a mock Discord webhook, not a real server.
+- Tested with mock Discord, Telegram and Slack servers, not real ones.
+- Telegram and Slack work in the Python script; the n8n workflow posts to Discord (swap its last node for n8n's Telegram or Slack node).
 
 ## Want a custom version?
 Describe your task in one sentence at https://tasktoagent.com/ and we'll build and test it for you.
