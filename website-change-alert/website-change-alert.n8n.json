@@ -1,0 +1,172 @@
+{
+  "name": "Website change alert (TaskToAgent)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Website change alert\nEvery 30 minutes: loads your pages and posts to Discord when one changes, or when a phrase like \"In stock\" appears or \"Sold out\" disappears.\n\n1. Edit **Pages to watch** (one line per page).\n2. Paste your Discord webhook URL in **Post to Discord**.\n3. **Activate** the workflow. The first run only remembers each page, so nothing is posted. n8n only saves that memory in active runs, so manual test runs always look like a first run.\n\nA page that fails to load 3 checks in a row is reported once. Lines that only moved (ranking lists) don't count. Telegram, Slack, email and pages that need a browser-like user agent: see the Python version.",
+        "height": 420,
+        "width": 420
+      },
+      "id": "56ea023a-5408-571a-9d24-f38ce18f3195",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "26761896-fd14-57ab-a235-930f1a3e3f3d",
+      "name": "Every 30 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One line per page. Leave out appears/disappears to get the changed lines instead.\n// start/end: only watch the text between these two phrases. ignore: a regex for parts that change every time (dates, counters).\nconst PAGES = [\n  { name: 'Keyboard back in stock', url: 'https://shop.example.com/products/keyboard', appears: 'Add to cart' },\n  { name: 'Tickets on sale', url: 'https://example.com/tour', disappears: 'Sold out' },\n  { name: 'Docs changelog', url: 'https://example.com/changelog', start: 'Release notes', end: 'Older releases', ignore: 'Last updated .*' },\n];\nreturn PAGES.map(p => ({ json: p }));\n"
+      },
+      "id": "3fd89284-0159-504a-a054-255350f7e9a8",
+      "name": "Pages to watch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; TaskToAgent-Website-Change-Alert/1.0; +https://tasktoagent.com/agents/website-change-alert/)"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "9fb3399a-11d4-5d99-bcfc-9740de18f80d",
+      "name": "Load page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compares each page with the last check. State is kept in the workflow's static data (only saved in Active/production runs).\nconst MAX_LINES = 12, FAIL_ALERT_AFTER = 3;\nconst mem = $getWorkflowStaticData('global'); mem.pages = mem.pages || {};\nconst watches = $('Pages to watch').all().map(i => i.json);\nconst pages = $input.all();\nconst BLOCK = 'p|div|br|li|tr|td|th|h[1-6]|section|article|header|footer|option|dt|dd|blockquote|pre|button|label|title';\nconst ENT = { amp: '&', lt: '<', gt: '>', quot: '\"', apos: \"'\", nbsp: ' ', '#39': \"'\" };\nconst toLines = (raw, w) => {\n  let t = String(raw || '')\n    .replace(/<!--[\\s\\S]*?-->/g, '')\n    .replace(/<(script|style|noscript|template|svg|head)\\b[\\s\\S]*?<\\/\\1\\s*>/gi, '\\n')\n    .replace(new RegExp(`<\\\\/?(${BLOCK})\\\\b[^>]*>`, 'gi'), '\\n')\n    .replace(/<[^>]+>/g, '')\n    .replace(/&(#\\d+|#x[0-9a-f]+|[a-z]+\\d*);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : (ENT[e.toLowerCase()] ?? m));\n  let lines = t.split('\\n').map(l => l.replace(/\\s+/g, ' ').trim()).filter(Boolean);\n  let text = lines.join('\\n');\n  if (w.start && text.includes(w.start)) text = text.split(w.start).slice(1).join(w.start);\n  if (w.end && text.includes(w.end)) text = text.split(w.end)[0];\n  lines = text.split('\\n').map(l => l.trim()).filter(Boolean);\n  if (w.ignore) { const rx = new RegExp(w.ignore, 'gi'); lines = lines.map(l => l.replace(rx, '').trim()).filter(Boolean); }\n  return lines;\n};\nconst has = (lines, p) => lines.join('\\n').toLowerCase().includes(String(p).toLowerCase());\nconst out = [];\nwatches.forEach((w, i) => {\n  const name = w.name || w.url, key = w.url + '|' + (w.appears || '') + '|' + (w.disappears || '');\n  const old = mem.pages[key] || {};\n  const res = pages[i] ? pages[i].json : {};\n  const raw = typeof res.data === 'string' ? res.data : '';\n  if (res.error || !raw) {\n    const fails = (old.fails || 0) + 1;\n    mem.pages[key] = { ...old, fails };\n    if (fails === FAIL_ALERT_AFTER) out.push({ json: { content: `⚠️ **${name}** could not be loaded ${fails} checks in a row\\n${w.url}` } });\n    return;\n  }\n  const lines = toLines(raw, w);\n  const now = { lines: lines.slice(0, 1500), fails: 0 };\n  if (w.appears || w.disappears) {\n    const hit = (w.appears ? has(lines, w.appears) : true) && (w.disappears ? !has(lines, w.disappears) : true);\n    now.hit = hit; delete now.lines;\n    if ('hit' in old && hit && !old.hit) {\n      const why = [w.appears && `\"${w.appears}\" is now on the page`, w.disappears && `\"${w.disappears}\" is gone`].filter(Boolean).join(' and ');\n      out.push({ json: { content: `🔔 **${name}**: ${why}\\n${w.url}` } });\n    }\n    mem.pages[key] = now; return;\n  }\n  mem.pages[key] = now;\n  if (!old.lines) return; // first run: just remember\n  const before = new Set(old.lines), after = new Set(now.lines);\n  const added = [...new Set(now.lines.filter(l => !before.has(l)))]; // lines that only moved don't count\n  const removed = [...new Set(old.lines.filter(l => !after.has(l)))];\n  if (!added.length && !removed.length) return;\n  const body = [];\n  for (const [s, xs] of [['+', added], ['-', removed]]) {\n    body.push(...xs.slice(0, MAX_LINES).map(x => `${s} ${x.slice(0, 200)}`));\n    if (xs.length > MAX_LINES) body.push(`${s} ...and ${xs.length - MAX_LINES} more`);\n  }\n  out.push({ json: { content: `🔔 **${name}** changed (${added.length} added, ${removed.length} removed)\\n${w.url}\\n${body.join('\\n')}`.slice(0, 1990) } });\n});\nreturn out;\n"
+      },
+      "id": "05360935-ef03-5dd5-90f1-ef570b3b782f",
+      "name": "Compare with last check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/PASTE_YOUR_WEBHOOK_HERE",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ username: 'Website change alert', content: $json.content, allowed_mentions: { parse: [] } }) }}",
+        "options": {}
+      },
+      "id": "7fac9680-a069-5a8b-9948-83a867ea112c",
+      "name": "Post to Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "connections": {
+    "Every 30 minutes": {
+      "main": [
+        [
+          {
+            "node": "Pages to watch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pages to watch": {
+      "main": [
+        [
+          {
+            "node": "Load page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load page": {
+      "main": [
+        [
+          {
+            "node": "Compare with last check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare with last check": {
+      "main": [
+        [
+          {
+            "node": "Post to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

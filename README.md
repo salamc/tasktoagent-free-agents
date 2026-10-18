@@ -1,6 +1,6 @@
 # Free AI agents & automations (n8n + Python)
 
-Twelve small, **tested** automations from [TaskToAgent](https://tasktoagent.com). Each one comes as an **n8n workflow** (import and click Active) and a **single-file Python script** (standard library only, nothing to `pip install`). Every script has a `--dry-run` mode so you can see what it does before giving it any credentials.
+Thirteen small, **tested** automations from [TaskToAgent](https://tasktoagent.com). Each one comes as an **n8n workflow** (import and click Active) and a **single-file Python script** (standard library only, nothing to `pip install`). Every script has a `--dry-run` mode so you can see what it does before giving it any credentials.
 
 | Agent | What it does | Guide |
 |---|---|---|
@@ -16,6 +16,7 @@ Twelve small, **tested** automations from [TaskToAgent](https://tasktoagent.com)
 | [steam-wishlist-price-alert](steam-wishlist-price-alert/) | Discord, Telegram, Slack or email alert when a Steam wishlist game hits your price (Steam + CheapShark, no key) | [Steam wishlist price alerts](https://tasktoagent.com/guides/steam-wishlist-price-drop-alert-discord/) |
 | [heartbeat-watchdog](heartbeat-watchdog/) | Dead man's switch: Discord/email alert when a cron job, backup or n8n workflow silently stops running | [Alert when a cron job stops running](https://tasktoagent.com/guides/alert-when-cron-job-or-n8n-workflow-stops-running/) |
 | [twitch-live-alert](twitch-live-alert/) | Discord, Telegram or Slack message when your Twitch streamers go live, once per stream, no bot to host | [Twitch live notifications in Discord without a bot](https://tasktoagent.com/guides/twitch-live-notification-discord-webhook/) |
+| [website-change-alert](website-change-alert/) | Discord, Telegram, Slack or email alert when a web page changes (added/removed lines) or a phrase like "In stock" appears. No browser extension | [Agent page](https://tasktoagent.com/agents/website-change-alert/) |
 
 ## Quick start
 ```bash

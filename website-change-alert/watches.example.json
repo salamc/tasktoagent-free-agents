@@ -1,0 +1,5 @@
+[
+  {"name": "Keyboard back in stock", "url": "https://shop.example.com/products/keyboard", "appears": "Add to cart"},
+  {"name": "Tickets on sale", "url": "https://example.com/tour", "disappears": "Sold out"},
+  {"name": "Docs changelog", "url": "https://example.com/changelog", "start": "Release notes", "end": "Older releases", "ignore": "Last updated .*"}
+]
