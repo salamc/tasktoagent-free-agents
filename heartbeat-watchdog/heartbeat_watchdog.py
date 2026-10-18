@@ -9,13 +9,16 @@ a backup, an n8n workflow, a scraper. Error alerts can't catch this, because not
           (curl, PowerShell, an n8n HTTP Request node), and `check` treats it as a heartbeat.
 
 Heartbeat types in checks.json (see checks.example.json):
-  file : a file your job touches when it succeeds (`... && touch /var/run/backup.ok`); stale if older than max_age
-  ping : a name pinged through `serve`; stale if not pinged within max_age
+  file : a file your job touches or writes when it succeeds (`... && touch /var/run/backup.ok`); stale if older than
+         max_age. The target can be a pattern like /backups/*.tar.gz (the newest match counts), and an optional
+         min_size ("1MB", "500KB") also alerts when the newest file is fresh but too small (an empty backup).
+  ping : a name pinged through `serve`; stale if not pinged within max_age. Jobs can report what they produced with
+         /ping/<name>?count=12 (alert if below min_count) or report a failed run with /ping/<name>/fail.
   n8n  : an n8n workflow id; stale if its last SUCCESSFUL execution is older than max_age (needs N8N_URL + N8N_API_KEY)
   url  : a URL that must answer HTTP 2xx (plain uptime check, no max_age)
 max_age: 90s, 15m, 2h, 26h, 7d.
 Usage: python3 heartbeat_watchdog.py [check|serve] [--dry-run]"""
-import os, sys, re, json, ssl, time, smtplib, urllib.request, urllib.parse, urllib.error
+import os, sys, re, json, glob, ssl, time, smtplib, urllib.request, urllib.parse, urllib.error
 from email.message import EmailMessage
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -29,11 +32,28 @@ N8N = (os.getenv("N8N_URL") or "http://localhost:5678").rstrip("/")
 KEY = os.getenv("N8N_API_KEY", "")
 DRY = "--dry-run" in sys.argv
 UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+SIZES = {"": 1, "B": 1, "KB": 1024, "MB": 1024 ** 2, "GB": 1024 ** 3}
 
 def secs(v):
     m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*([smhd]?)\s*", str(v))
     if not m: raise ValueError(f"bad max_age {v!r} (use e.g. 15m, 2h, 26h, 7d)")
     return float(m.group(1)) * UNITS[m.group(2) or "s"]
+
+def size(v):
+    m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*([KMG]?B?)\s*", str(v).upper())
+    if not m: raise ValueError(f"bad min_size {v!r} (use e.g. 1, 500KB, 1MB, 2GB)")
+    return float(m.group(1)) * SIZES[m.group(2)]
+
+def human(n):
+    for u in ("GB", "MB", "KB"):
+        if n >= SIZES[u]: return f"{n / SIZES[u]:.1f} {u}"
+    return f"{int(n)} B"
+
+def newest(target):
+    """Newest file matching target (a path or a glob pattern), or None."""
+    paths = glob.glob(target) if glob.has_magic(target) else [target]
+    files = [p for p in paths if os.path.isfile(p)]
+    return max(files, key=os.path.getmtime) if files else None
 
 def ago(sec):
     if sec is None: return "never"
@@ -70,14 +90,26 @@ def evaluate(c, now, pings):
         except urllib.error.HTTPError as e: return False, f"HTTP {e.code}"
         except Exception as e: return False, f"unreachable ({type(e).__name__}: {e})"[:200]
     limit = secs(c.get("max_age", "25h"))
-    if t == "file": last = os.path.getmtime(target) if os.path.exists(target) else None
-    elif t == "ping": last = pings.get(target)
+    extra = None  # a fresh check-in that still isn't good enough: empty output or a reported failure
+    if t == "file":
+        f = newest(target); last = os.path.getmtime(f) if f else None
+        if f and c.get("min_size") is not None and os.path.getsize(f) < size(c["min_size"]):
+            extra = f"newest file {os.path.basename(f)} is only {human(os.path.getsize(f))} (minimum {c['min_size']})"
+    elif t == "ping":
+        p = pings.get(target)
+        if isinstance(p, (int, float)): p = {"t": p}  # pings.json from older versions
+        p = p or {}; last = p.get("t")
+        if p.get("fail"): extra = "the job reported a failed run"
+        elif c.get("min_count") is not None:
+            if p.get("count") is None: extra = "pinged without ?count= (min_count is set)"
+            elif p["count"] < float(c["min_count"]): extra = f"produced {p['count']:g} (minimum {c['min_count']})"
     elif t == "n8n":
         if not KEY: return False, "N8N_API_KEY not set"
         try: last = last_n8n_success(target)
         except Exception as e: return False, f"n8n API error ({e})"[:200]
     else: return False, f"unknown type {t!r}"
     age = None if last is None else now - last
+    if age is not None and age <= limit and extra: return False, f"ran {ago(age)} but {extra}"
     return (age is not None and age <= limit), f"last success {ago(age)} (limit {c.get('max_age', '25h')})"
 
 def send(text):
@@ -118,12 +150,18 @@ def check():
 
 class Ping(BaseHTTPRequestHandler):
     def _ping(self):
-        m = re.fullmatch(r"/ping/([A-Za-z0-9._-]{1,64})/?", urllib.parse.urlparse(self.path).path)
+        url = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(url.query)
+        m = re.fullmatch(r"/ping/([A-Za-z0-9._-]{1,64})(/fail)?/?", url.path)
         if not m: self.send_response(404); self.end_headers(); return
         token = os.getenv("PING_TOKEN")
-        if token and urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("token", [""])[0] != token:
+        if token and q.get("token", [""])[0] != token:
             self.send_response(403); self.end_headers(); return
-        p = load(PINGS, {}); p[m.group(1)] = time.time(); save(PINGS, p)
+        rec = {"t": time.time()}
+        if m.group(2): rec["fail"] = True
+        if q.get("count"):
+            try: rec["count"] = float(q["count"][0])
+            except ValueError: self.send_response(400); self.end_headers(); self.wfile.write(b"count must be a number\n"); return
+        p = load(PINGS, {}); p[m.group(1)] = rec; save(PINGS, p)
         self.send_response(200); self.send_header("Content-Type", "text/plain"); self.end_headers(); self.wfile.write(b"ok\n")
     do_GET = do_POST = do_HEAD = _ping
     def log_message(self, *a): pass
