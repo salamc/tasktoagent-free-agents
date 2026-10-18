@@ -1,0 +1,270 @@
+{
+ "name": "TaskToAgent - Twitch live alert",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Twitch live alert\nEvery 3 minutes: asks Twitch which of your channels are live and posts each new stream once to Discord.\n\n1. Twitch: dev.twitch.tv/console > Register Your Application (redirect URL http://localhost) > copy the Client ID and create a Client Secret.\n2. Discord: channel settings > Integrations > Webhooks > New > Copy URL.\n3. Fill in **Settings** (client id, secret, channels comma-separated, webhook).\n4. Activate. The first run posts whoever is live right now, then only new streams.\n\nTelegram/Slack, role pings and game filters: see the Python version.",
+    "height": 340,
+    "width": 460
+   },
+   "id": "de1e6831-63b1-5206-960d-cd7470cf7db8",
+   "name": "Read me",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -520,
+    -300
+   ]
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "minutes",
+       "minutesInterval": 3
+      }
+     ]
+    }
+   },
+   "id": "3c673118-2f3d-5a7c-87d0-826d3279c4a8",
+   "name": "Schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "6eb8fc44-9c04-54ca-8761-345cdbfe6732",
+       "name": "client_id",
+       "value": "PASTE_TWITCH_CLIENT_ID",
+       "type": "string"
+      },
+      {
+       "id": "c6efd8fe-00c8-5a39-8ff9-bbf2d5137f52",
+       "name": "client_secret",
+       "value": "PASTE_TWITCH_CLIENT_SECRET",
+       "type": "string"
+      },
+      {
+       "id": "e9d376ff-f75c-5f98-9013-77b3e3f52846",
+       "name": "channels",
+       "value": "shroud,pokimane,your_friend",
+       "type": "string"
+      },
+      {
+       "id": "1a591f09-0d78-503e-aaf9-0ed3f5f6f3ce",
+       "name": "discord_webhook",
+       "value": "PASTE_YOUR_DISCORD_WEBHOOK_URL",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "55150092-54bc-5c93-a55a-ed06ec589023",
+   "name": "Settings",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    220,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://id.twitch.tv/oauth2/token",
+    "sendBody": true,
+    "contentType": "form-urlencoded",
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "client_id",
+       "value": "={{ $json.client_id }}"
+      },
+      {
+       "name": "client_secret",
+       "value": "={{ $json.client_secret }}"
+      },
+      {
+       "name": "grant_type",
+       "value": "client_credentials"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "0d2d0cee-6d4e-59e9-8a92-f68ad3f5c29f",
+   "name": "Get Twitch token",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    440,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "url": "={{ 'https://api.twitch.tv/helix/streams?first=100&' + $('Settings').first().json.channels.split(',').map(c => c.trim().toLowerCase()).filter(c => c).slice(0, 100).map(c => 'user_login=' + encodeURIComponent(c)).join('&') }}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Client-Id",
+       "value": "={{ $('Settings').first().json.client_id }}"
+      },
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $json.access_token }}"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "3628d2aa-b137-5df8-a5aa-58bea4f85ffe",
+   "name": "Who is live",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    660,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// One item per live stream\nreturn ($json.data || []).filter(s => (s.type || 'live') === 'live').map(s => ({ json: s }));"
+   },
+   "id": "0981e47f-e554-5b1f-9998-5158f7d73ffc",
+   "name": "One item per stream",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    880,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "removeItemsSeenInPreviousExecutions",
+    "logic": "removeItemsWithAlreadySeenKeyValues",
+    "dedupeValue": "={{ $json.id }}",
+    "options": {}
+   },
+   "id": "dfc8c935-d5cc-58ac-aad4-4702daf4cbb5",
+   "name": "Only new streams",
+   "type": "n8n-nodes-base.removeDuplicates",
+   "typeVersion": 2,
+   "position": [
+    1100,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $('Settings').first().json.discord_webhook }}",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ username: 'Twitch Live Alert', content: '🔴 **' + $json.user_name + '** is live: ' + ($json.title || '(no title)') + '\\nPlaying ' + ($json.game_name || 'something') + ' · https://twitch.tv/' + $json.user_login, allowed_mentions: { parse: [] } }) }}",
+    "options": {
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 1000
+      }
+     }
+    }
+   },
+   "id": "cc47899f-100a-59a3-8c5a-622d5d6a7540",
+   "name": "Post to Discord",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1320,
+    0
+   ]
+  }
+ ],
+ "connections": {
+  "Schedule": {
+   "main": [
+    [
+     {
+      "node": "Settings",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Settings": {
+   "main": [
+    [
+     {
+      "node": "Get Twitch token",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Twitch token": {
+   "main": [
+    [
+     {
+      "node": "Who is live",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Who is live": {
+   "main": [
+    [
+     {
+      "node": "One item per stream",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "One item per stream": {
+   "main": [
+    [
+     {
+      "node": "Only new streams",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Only new streams": {
+   "main": [
+    [
+     {
+      "node": "Post to Discord",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "meta": {
+  "templateCredsSetupCompleted": true
+ }
+}
