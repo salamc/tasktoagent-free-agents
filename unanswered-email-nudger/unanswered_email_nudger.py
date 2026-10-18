@@ -11,11 +11,11 @@ from email.message import EmailMessage
 from email.utils import parseaddr, getaddresses, parsedate_to_datetime
 from datetime import datetime, timedelta, timezone
 
-DAYS = int(os.getenv("DAYS", "3"))                # no reply after this many days -> listed
-LOOKBACK = int(os.getenv("LOOKBACK_DAYS", "21"))  # ignore sent mail older than this
-ME = [a.strip().lower() for a in os.getenv("MY_ADDRESSES", os.getenv("IMAP_USER", "")).split(",") if a.strip()]
-SKIP = re.compile(os.getenv("SKIP_RECIPIENTS", r"no-?reply|notifications?@|mailer-daemon|calendar|invite"), re.I)
-SKIP_SUBJ = re.compile(os.getenv("SKIP_SUBJECTS", r"^(accepted|declined|automatic reply|out of office)"), re.I)
+DAYS = int((os.getenv("DAYS") or "3"))                # no reply after this many days -> listed
+LOOKBACK = int((os.getenv("LOOKBACK_DAYS") or "21"))  # ignore sent mail older than this
+ME = [a.strip().lower() for a in (os.getenv("MY_ADDRESSES") or os.getenv("IMAP_USER", "")).split(",") if a.strip()]
+SKIP = re.compile((os.getenv("SKIP_RECIPIENTS") or r"no-?reply|notifications?@|mailer-daemon|calendar|invite"), re.I)
+SKIP_SUBJ = re.compile((os.getenv("SKIP_SUBJECTS") or r"^(accepted|declined|automatic reply|out of office)"), re.I)
 HDRS = "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID IN-REPLY-TO REFERENCES FROM TO CC SUBJECT DATE)])"
 
 def norm_subj(s): return re.sub(r"^\s*((re|fw|fwd|aw|tr|sv)\s*:\s*)+", "", s or "", flags=re.I).strip().lower()
@@ -46,11 +46,11 @@ def find_sent(M):
     return "Sent"
 
 def from_imap(since):
-    M = imaplib.IMAP4_SSL(os.environ["IMAP_HOST"], int(os.getenv("IMAP_PORT", "993")))
+    M = imaplib.IMAP4_SSL(os.environ["IMAP_HOST"], int((os.getenv("IMAP_PORT") or "993")))
     M.login(os.environ["IMAP_USER"], os.environ["IMAP_PASSWORD"])
     sent = imap_folder(M, find_sent(M), since)
     inbox = []
-    for f in os.getenv("REPLY_FOLDERS", "INBOX").split(","): inbox += imap_folder(M, f.strip(), since)
+    for f in (os.getenv("REPLY_FOLDERS") or "INBOX").split(","): inbox += imap_folder(M, f.strip(), since)
     M.logout(); return sent, inbox
 
 def from_dir(d):
@@ -92,11 +92,11 @@ def main():
     text = report(unanswered(sent, inbox, now))
     to = os.getenv("EMAIL_TO")
     if "--dry-run" in sys.argv or not to: print(text); return
-    msg = EmailMessage(); msg["Subject"] = "Emails waiting for a reply"; msg["From"] = os.getenv("EMAIL_FROM", os.getenv("SMTP_USER", os.getenv("IMAP_USER", to))); msg["To"] = to
+    msg = EmailMessage(); msg["Subject"] = "Emails waiting for a reply"; msg["From"] = (os.getenv("EMAIL_FROM") or (os.getenv("SMTP_USER") or (os.getenv("IMAP_USER") or to))); msg["To"] = to
     msg.set_content(text)
-    with smtplib.SMTP(os.getenv("SMTP_HOST", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", "587"))) as s:
+    with smtplib.SMTP((os.getenv("SMTP_HOST") or "smtp.gmail.com"), int((os.getenv("SMTP_PORT") or "587"))) as s:
         s.starttls(context=ssl.create_default_context())
-        s.login(os.getenv("SMTP_USER", os.getenv("IMAP_USER", "")), os.getenv("SMTP_PASSWORD", os.getenv("IMAP_PASSWORD", "")))
+        s.login((os.getenv("SMTP_USER") or os.getenv("IMAP_USER", "")), (os.getenv("SMTP_PASSWORD") or os.getenv("IMAP_PASSWORD", "")))
         s.send_message(msg)
     print(f"report emailed to {to} (only to you)")
 

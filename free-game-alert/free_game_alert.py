@@ -7,12 +7,12 @@ import os, sys, json, time, urllib.request, urllib.parse
 from datetime import datetime, timezone
 
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL", "")
-STATE = os.getenv("STATE_FILE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "seen_games.json"))
-PLATFORMS = os.getenv("GAMERPOWER_PLATFORMS", "pc")          # e.g. pc, steam, epic-games-store, gog
+STATE = (os.getenv("STATE_FILE") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "seen_games.json"))
+PLATFORMS = (os.getenv("GAMERPOWER_PLATFORMS") or "pc")          # e.g. pc, steam, epic-games-store, gog
 ITAD_KEY = os.getenv("ITAD_API_KEY", "")
 WATCH = [t.strip() for t in os.getenv("WATCH_GAMES", "").split(",") if t.strip()]  # titles for ITAD
-MAX_PRICE = float(os.getenv("MAX_PRICE", "10"))
-COUNTRY = os.getenv("COUNTRY", "US")
+MAX_PRICE = float((os.getenv("MAX_PRICE") or "10"))
+COUNTRY = (os.getenv("COUNTRY") or "US")
 UA = {"User-Agent": "TaskToAgent-Game-Alert/1.0 (+https://tasktoagent.com/agents/)"}
 
 def get(url, data=None):

@@ -10,16 +10,16 @@ from email import policy
 from email.utils import parseaddr
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-STATE = os.getenv("STATE_FILE", os.path.join(HERE, "email_to_discord_state.json"))
+STATE = (os.getenv("STATE_FILE") or os.path.join(HERE, "email_to_discord_state.json"))
 UA = {"User-Agent": "TaskToAgent-Email-To-Discord/1.0 (+https://tasktoagent.com/agents/)", "Content-Type": "application/json"}
-PREVIEW = int(os.getenv("PREVIEW_CHARS", "300"))
+PREVIEW = int((os.getenv("PREVIEW_CHARS") or "300"))
 
 def inboxes():
     """INBOXES_FILE (JSON list) for several inboxes, or plain env vars for one."""
     f = os.getenv("INBOXES_FILE")
     if f: return json.load(open(f))
-    return [{"name": os.getenv("INBOX_NAME", os.getenv("IMAP_USER", "inbox")), "host": os.getenv("IMAP_HOST"), "port": int(os.getenv("IMAP_PORT", "993")),
-             "user": os.getenv("IMAP_USER"), "password": os.getenv("IMAP_PASSWORD"), "folder": os.getenv("IMAP_FOLDER", "INBOX"),
+    return [{"name": (os.getenv("INBOX_NAME") or (os.getenv("IMAP_USER") or "inbox")), "host": os.getenv("IMAP_HOST"), "port": int((os.getenv("IMAP_PORT") or "993")),
+             "user": os.getenv("IMAP_USER"), "password": os.getenv("IMAP_PASSWORD"), "folder": (os.getenv("IMAP_FOLDER") or "INBOX"),
              "webhook": os.getenv("DISCORD_WEBHOOK_URL", ""), "from_contains": os.getenv("FROM_CONTAINS", ""),
              "subject_contains": os.getenv("SUBJECT_CONTAINS", ""), "exclude": os.getenv("EXCLUDE", "")}]
 
@@ -67,7 +67,7 @@ def run_imap(cfg, state):
         state[key] = {"validity": validity, "last": max(uids or [0])}
         print(f"[{cfg['name']}] first run: remembered {len(uids)} existing email(s), will post only new ones from now on"); M.logout(); return 0
     n = 0
-    for u in [u for u in uids if u > st["last"]][:int(os.getenv("MAX_PER_RUN", "20"))]:
+    for u in [u for u in uids if u > st["last"]][:int((os.getenv("MAX_PER_RUN") or "20"))]:
         _, d = M.uid("fetch", str(u), "(BODY.PEEK[])")
         m = email.message_from_bytes(d[0][1], policy=policy.default)
         if match(cfg, str(m["From"] or ""), str(m["Subject"] or ""), text_of(m)): post(cfg.get("webhook") or os.getenv("DISCORD_WEBHOOK_URL", ""), cfg, m); n += 1

@@ -8,14 +8,14 @@ from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timedelta, timezone
 
-FEEDS = os.getenv("FEEDS", ",".join([
+FEEDS = (os.getenv("FEEDS") or ",".join([
     "https://hnrss.org/newest?q=AI+OR+LLM+OR+agent&points=50",
     "https://huggingface.co/blog/feed.xml",
     "https://simonwillison.net/atom/everything/",
     "https://openai.com/news/rss.xml",
 ])).split(",")
-HOURS = int(os.getenv("HOURS", "24"))
-MAX_ITEMS = int(os.getenv("MAX_ITEMS", "12"))
+HOURS = int((os.getenv("HOURS") or "24"))
+MAX_ITEMS = int((os.getenv("MAX_ITEMS") or "12"))
 UA = {"User-Agent": "TaskToAgent-AI-News-Digest/1.0 (+https://tasktoagent.com/agents/)"}
 
 def fetch(url):
@@ -61,9 +61,9 @@ def collect():
 def ai_summary(items):
     key = os.getenv("OPENAI_API_KEY")
     if not key or not items: return None
-    base = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+    base = (os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1").rstrip("/")
     text = "\n".join(f"- {i['title']} ({i['link']}): {i['summary']}" for i in items)
-    body = {"model": os.getenv("OPENAI_MODEL", "gpt-4o-mini"), "messages": [
+    body = {"model": (os.getenv("OPENAI_MODEL") or "gpt-4o-mini"), "messages": [
         {"role": "system", "content": "You write a 5-minute AI news digest. 3-6 bullet points, plain English, most useful first, each with its link. No hype."},
         {"role": "user", "content": text}]}
     req = urllib.request.Request(base + "/chat/completions", json.dumps(body).encode(),
@@ -82,9 +82,9 @@ def build(items):
 def send(text):
     host, to = os.getenv("SMTP_HOST"), os.getenv("EMAIL_TO")
     if not host or not to or "--dry-run" in sys.argv: print(text); return
-    m = EmailMessage(); m["Subject"] = "Your AI news digest"; m["From"] = os.getenv("EMAIL_FROM", os.getenv("SMTP_USER")); m["To"] = to
+    m = EmailMessage(); m["Subject"] = "Your AI news digest"; m["From"] = (os.getenv("EMAIL_FROM") or os.getenv("SMTP_USER")); m["To"] = to
     m.set_content(text)
-    with smtplib.SMTP(host, int(os.getenv("SMTP_PORT", "587")), timeout=30) as s:
+    with smtplib.SMTP(host, int((os.getenv("SMTP_PORT") or "587")), timeout=30) as s:
         s.starttls(context=ssl.create_default_context()); s.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASSWORD")); s.send_message(m)
     print(f"sent digest to {to}")
 

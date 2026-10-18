@@ -10,10 +10,10 @@ from email.message import EmailMessage
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-N8N = os.getenv("N8N_URL", "http://localhost:5678").rstrip("/")
+N8N = (os.getenv("N8N_URL") or "http://localhost:5678").rstrip("/")
 KEY = os.getenv("N8N_API_KEY", "")
-BACKUP_DIR = os.getenv("BACKUP_DIR", os.path.join(HERE, "n8n-backup"))
-STATE = os.getenv("STATE_FILE", os.path.join(HERE, "n8n_alert_state.json"))
+BACKUP_DIR = (os.getenv("BACKUP_DIR") or os.path.join(HERE, "n8n-backup"))
+STATE = (os.getenv("STATE_FILE") or os.path.join(HERE, "n8n_alert_state.json"))
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL", "")
 DRY = "--dry-run" in sys.argv
 VOLATILE = ("updatedAt", "createdAt", "versionId", "activeVersionId", "triggerCount", "shared", "homeProject", "scopes", "activeVersion", "meta")
@@ -68,8 +68,8 @@ def alert(lines):
         urllib.request.urlopen(urllib.request.Request(WEBHOOK, body, {"Content-Type": "application/json", "User-Agent": "TaskToAgent-n8n-alert/1.0"}), timeout=20).read()
     if os.getenv("EMAIL_TO"):
         m = EmailMessage(); m["Subject"] = f"n8n: {len(lines)} failed execution(s)"; m["To"] = os.environ["EMAIL_TO"]
-        m["From"] = os.getenv("EMAIL_FROM", os.getenv("SMTP_USER", os.environ["EMAIL_TO"])); m.set_content(text)
-        with smtplib.SMTP(os.getenv("SMTP_HOST", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", "587"))) as s:
+        m["From"] = (os.getenv("EMAIL_FROM") or (os.getenv("SMTP_USER") or os.environ["EMAIL_TO"])); m.set_content(text)
+        with smtplib.SMTP((os.getenv("SMTP_HOST") or "smtp.gmail.com"), int((os.getenv("SMTP_PORT") or "587"))) as s:
             s.starttls(context=ssl.create_default_context()); s.login(os.getenv("SMTP_USER", ""), os.getenv("SMTP_PASSWORD", "")); s.send_message(m)
     print(f"alerted: {len(lines)} failure(s)")
 

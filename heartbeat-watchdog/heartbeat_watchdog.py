@@ -21,11 +21,11 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CHECKS_FILE = os.getenv("CHECKS_FILE", os.path.join(HERE, "checks.json"))
-STATE = os.getenv("STATE_FILE", os.path.join(HERE, "watchdog_state.json"))
-PINGS = os.getenv("PINGS_FILE", os.path.join(HERE, "pings.json"))
+CHECKS_FILE = (os.getenv("CHECKS_FILE") or os.path.join(HERE, "checks.json"))
+STATE = (os.getenv("STATE_FILE") or os.path.join(HERE, "watchdog_state.json"))
+PINGS = (os.getenv("PINGS_FILE") or os.path.join(HERE, "pings.json"))
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL", "")
-N8N = os.getenv("N8N_URL", "http://localhost:5678").rstrip("/")
+N8N = (os.getenv("N8N_URL") or "http://localhost:5678").rstrip("/")
 KEY = os.getenv("N8N_API_KEY", "")
 DRY = "--dry-run" in sys.argv
 UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
@@ -92,8 +92,8 @@ def send(text):
                 time.sleep(float(e.headers.get("Retry-After", "2")))
     if os.getenv("EMAIL_TO"):
         m = EmailMessage(); m["Subject"] = text.splitlines()[0][:120]; m["To"] = os.environ["EMAIL_TO"]
-        m["From"] = os.getenv("EMAIL_FROM", os.getenv("SMTP_USER", os.environ["EMAIL_TO"])); m.set_content(text)
-        with smtplib.SMTP(os.getenv("SMTP_HOST", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", "587"))) as s:
+        m["From"] = (os.getenv("EMAIL_FROM") or (os.getenv("SMTP_USER") or os.environ["EMAIL_TO"])); m.set_content(text)
+        with smtplib.SMTP((os.getenv("SMTP_HOST") or "smtp.gmail.com"), int((os.getenv("SMTP_PORT") or "587"))) as s:
             s.starttls(context=ssl.create_default_context()); s.login(os.getenv("SMTP_USER", ""), os.getenv("SMTP_PASSWORD", "")); s.send_message(m)
 
 def check():
@@ -129,7 +129,7 @@ class Ping(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
 
 def serve():
-    host, port = os.getenv("HOST", "0.0.0.0"), int(os.getenv("PORT", "8765"))
+    host, port = (os.getenv("HOST") or "0.0.0.0"), int((os.getenv("PORT") or "8765"))
     print(f"ping receiver on http://{host}:{port}/ping/<name>" + (" (token required)" if os.getenv("PING_TOKEN") else ""))
     ThreadingHTTPServer((host, port), Ping).serve_forever()
 

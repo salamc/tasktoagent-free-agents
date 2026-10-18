@@ -11,9 +11,9 @@ from email.utils import parseaddr, parsedate_to_datetime
 from datetime import datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CSV_FILE = os.getenv("CSV_FILE", os.path.join(HERE, "invoices.csv"))
-DAYS = int(os.getenv("DAYS", "30"))
-KEYWORDS = [k.strip().lower() for k in os.getenv("KEYWORDS", "invoice,receipt,facture,rechnung,factura,order confirmation,payment received,your bill").split(",") if k.strip()]
+CSV_FILE = (os.getenv("CSV_FILE") or os.path.join(HERE, "invoices.csv"))
+DAYS = int((os.getenv("DAYS") or "30"))
+KEYWORDS = [k.strip().lower() for k in (os.getenv("KEYWORDS") or "invoice,receipt,facture,rechnung,factura,order confirmation,payment received,your bill").split(",") if k.strip()]
 FROM_CONTAINS = [k.strip().lower() for k in os.getenv("FROM_CONTAINS", "").split(",") if k.strip()]
 SHEET_URL = os.getenv("SHEET_WEBHOOK_URL", "")
 COLS = ["date", "vendor", "amount", "currency", "invoice_no", "subject", "from", "attachments", "source", "key"]
@@ -91,9 +91,9 @@ def row(m, source):
             "attachments": "; ".join(n for n, _ in atts if n), "source": source, "key": key}
 
 def from_imap():
-    M = imaplib.IMAP4_SSL(os.environ["IMAP_HOST"], int(os.getenv("IMAP_PORT", "993")))
+    M = imaplib.IMAP4_SSL(os.environ["IMAP_HOST"], int((os.getenv("IMAP_PORT") or "993")))
     M.login(os.environ["IMAP_USER"], os.environ["IMAP_PASSWORD"])
-    M.select(os.getenv("IMAP_FOLDER", "INBOX"), readonly=True)
+    M.select((os.getenv("IMAP_FOLDER") or "INBOX"), readonly=True)
     _, ids = M.search(None, "SINCE", (datetime.now() - timedelta(days=DAYS)).strftime("%d-%b-%Y"))
     for i in ids[0].split():
         _, d = M.fetch(i, "(BODY.PEEK[])")

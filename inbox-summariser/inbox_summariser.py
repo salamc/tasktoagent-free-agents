@@ -10,7 +10,7 @@ from email.message import EmailMessage
 from email.utils import parseaddr
 from datetime import datetime, timedelta
 
-HOURS = int(os.getenv("HOURS", "24")); MAX = int(os.getenv("MAX_EMAILS", "40"))
+HOURS = int((os.getenv("HOURS") or "24")); MAX = int((os.getenv("MAX_EMAILS") or "40"))
 UA = {"User-Agent": "TaskToAgent-Inbox-Summariser/1.0"}
 
 def body_text(m):
@@ -21,9 +21,9 @@ def body_text(m):
     return re.sub(r"\s+", " ", t).strip()
 
 def from_imap():
-    M = imaplib.IMAP4_SSL(os.environ["IMAP_HOST"], int(os.getenv("IMAP_PORT", "993")))
+    M = imaplib.IMAP4_SSL(os.environ["IMAP_HOST"], int((os.getenv("IMAP_PORT") or "993")))
     M.login(os.environ["IMAP_USER"], os.environ["IMAP_PASSWORD"])
-    M.select(os.getenv("IMAP_FOLDER", "INBOX"), readonly=True)
+    M.select((os.getenv("IMAP_FOLDER") or "INBOX"), readonly=True)
     since = (datetime.now() - timedelta(hours=HOURS)).strftime("%d-%b-%Y")
     _, ids = M.search(None, "UNSEEN", "SINCE", since); out = []
     for i in ids[0].split()[-MAX:]:
@@ -42,9 +42,9 @@ def simplify(msgs):
 def ai(items):
     key = os.getenv("OPENAI_API_KEY")
     if not key: return None
-    base = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+    base = (os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1").rstrip("/")
     prompt = "\n".join(f"{n+1}. From {i['name']} <{i['from']}> | {i['subject']} | {i['snippet']}" for n, i in enumerate(items))
-    body = {"model": os.getenv("OPENAI_MODEL", "gpt-4o-mini"), "messages": [
+    body = {"model": (os.getenv("OPENAI_MODEL") or "gpt-4o-mini"), "messages": [
         {"role": "system", "content": "Summarise this inbox for a busy person. First 'Needs a reply' (who, what, by when), then 'FYI', then a one-line count of newsletters/notifications. Be brief. Never invent facts."},
         {"role": "user", "content": prompt}]}
     req = urllib.request.Request(base + "/chat/completions", json.dumps(body).encode(), {"Content-Type": "application/json", "Authorization": "Bearer " + key, **UA})
@@ -65,9 +65,9 @@ def build(items):
 def deliver(text):
     to = os.getenv("EMAIL_TO")
     if "--dry-run" in sys.argv or not to or not os.getenv("SMTP_HOST"): print(text); return
-    m = EmailMessage(); m["Subject"] = "Your inbox summary"; m["From"] = os.getenv("EMAIL_FROM", os.getenv("SMTP_USER", os.getenv("IMAP_USER"))); m["To"] = to; m.set_content(text)
-    with smtplib.SMTP(os.environ["SMTP_HOST"], int(os.getenv("SMTP_PORT", "587")), timeout=30) as s:
-        s.starttls(context=ssl.create_default_context()); s.login(os.getenv("SMTP_USER", os.getenv("IMAP_USER")), os.getenv("SMTP_PASSWORD", os.getenv("IMAP_PASSWORD"))); s.send_message(m)
+    m = EmailMessage(); m["Subject"] = "Your inbox summary"; m["From"] = (os.getenv("EMAIL_FROM") or (os.getenv("SMTP_USER") or os.getenv("IMAP_USER"))); m["To"] = to; m.set_content(text)
+    with smtplib.SMTP(os.environ["SMTP_HOST"], int((os.getenv("SMTP_PORT") or "587")), timeout=30) as s:
+        s.starttls(context=ssl.create_default_context()); s.login((os.getenv("SMTP_USER") or os.getenv("IMAP_USER")), (os.getenv("SMTP_PASSWORD") or os.getenv("IMAP_PASSWORD"))); s.send_message(m)
     print(f"summary sent to {to}")
 
 if __name__ == "__main__":

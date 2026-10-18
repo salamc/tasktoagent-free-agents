@@ -8,14 +8,14 @@ import os, sys, json, ssl, time, smtplib, urllib.request, urllib.parse, urllib.e
 from email.message import EmailMessage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-STATE = os.getenv("STATE_FILE", os.path.join(HERE, "price_state.json"))
+STATE = (os.getenv("STATE_FILE") or os.path.join(HERE, "price_state.json"))
 STEAM_ID = os.getenv("STEAM_ID", "")                     # 17-digit SteamID64, wishlist must be public
-GAMES = [g.strip() for g in os.getenv("WATCH_GAMES", "Balatro,Hades II,Hollow Knight: Silksong").split(",") if g.strip()]  # app ids or titles
-CC = os.getenv("COUNTRY", "us")
-TARGET = float(os.getenv("TARGET_PRICE", "10"))           # alert at or below this price
-MIN_DISCOUNT = int(os.getenv("MIN_DISCOUNT", "50"))       # ...or at least this % off
-ALERT_NEW_LOW = os.getenv("ALERT_NEW_LOW", "1") == "1"    # ...or cheaper than the last time we checked
-MAX_GAMES = int(os.getenv("MAX_GAMES", "60"))
+GAMES = [g.strip() for g in (os.getenv("WATCH_GAMES") or "Balatro,Hades II,Hollow Knight: Silksong").split(",") if g.strip()]  # app ids or titles
+CC = (os.getenv("COUNTRY") or "us")
+TARGET = float((os.getenv("TARGET_PRICE") or "10"))           # alert at or below this price
+MIN_DISCOUNT = int((os.getenv("MIN_DISCOUNT") or "50"))       # ...or at least this % off
+ALERT_NEW_LOW = (os.getenv("ALERT_NEW_LOW") or "1") == "1"    # ...or cheaper than the last time we checked
+MAX_GAMES = int((os.getenv("MAX_GAMES") or "60"))
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL", "")
 UA = {"User-Agent": "TaskToAgent-Steam-Price-Alert/1.0 (+https://tasktoagent.com/agents/steam-wishlist-price-alert/)"}
 DRY = "--dry-run" in sys.argv
@@ -72,8 +72,8 @@ def notify(hits):
             urllib.request.urlopen(urllib.request.Request(WEBHOOK, body, {**UA, "Content-Type": "application/json"}), timeout=20).read(); time.sleep(1)
     if os.getenv("EMAIL_TO"):
         m = EmailMessage(); m["Subject"] = f"{len(hits)} wishlist price drop(s)"; m["To"] = os.environ["EMAIL_TO"]
-        m["From"] = os.getenv("EMAIL_FROM", os.getenv("SMTP_USER", os.environ["EMAIL_TO"])); m.set_content(text.replace("**", ""))
-        with smtplib.SMTP(os.getenv("SMTP_HOST", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", "587"))) as s:
+        m["From"] = (os.getenv("EMAIL_FROM") or (os.getenv("SMTP_USER") or os.environ["EMAIL_TO"])); m.set_content(text.replace("**", ""))
+        with smtplib.SMTP((os.getenv("SMTP_HOST") or "smtp.gmail.com"), int((os.getenv("SMTP_PORT") or "587"))) as s:
             s.starttls(context=ssl.create_default_context()); s.login(os.getenv("SMTP_USER", ""), os.getenv("SMTP_PASSWORD", "")); s.send_message(m)
     print(f"alerted {len(hits)} price drop(s)")
 

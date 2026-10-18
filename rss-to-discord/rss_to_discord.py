@@ -5,15 +5,15 @@ a Telegram chat (bot token + chat id) and/or a Slack incoming webhook. Set any o
 First run only records what's already there (no flood); later runs post what's new."""
 import os, sys, json, time, html, re, urllib.request, urllib.error, xml.etree.ElementTree as ET
 
-FEEDS = [f.strip() for f in os.getenv("FEEDS", "https://hnrss.org/frontpage,https://www.rockpapershotgun.com/feed").split(",") if f.strip()]
+FEEDS = [f.strip() for f in (os.getenv("FEEDS") or "https://hnrss.org/frontpage,https://www.rockpapershotgun.com/feed").split(",") if f.strip()]
 KEYWORDS = [k.strip().lower() for k in os.getenv("KEYWORDS", "").split(",") if k.strip()]  # empty = post everything
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL", "")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")  # e.g. 123456789, -100123... for groups/channels, or @yourchannel
 SLACK = os.getenv("SLACK_WEBHOOK_URL", "")
-TG_API = os.getenv("TELEGRAM_API", "https://api.telegram.org")
-STATE = os.getenv("STATE_FILE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "seen_rss.json"))
-MAX_PER_RUN = int(os.getenv("MAX_PER_RUN", "10"))
+TG_API = (os.getenv("TELEGRAM_API") or "https://api.telegram.org")
+STATE = (os.getenv("STATE_FILE") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "seen_rss.json"))
+MAX_PER_RUN = int((os.getenv("MAX_PER_RUN") or "10"))
 UA = {"User-Agent": "TaskToAgent-RSS-to-Discord/1.0 (+https://tasktoagent.com/agents/)"}
 A = "{http://www.w3.org/2005/Atom}"
 
