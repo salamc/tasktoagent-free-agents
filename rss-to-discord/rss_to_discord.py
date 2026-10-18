@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""TaskToAgent - RSS to Discord. Python 3.9+, standard library only.
-Watches RSS/Atom feeds and posts new items (optionally only those matching keywords) to a Discord webhook.
+"""TaskToAgent - RSS to Discord (also Telegram and Slack). Python 3.9+, standard library only.
+Watches RSS/Atom feeds and posts new items (optionally only those matching keywords) to a Discord webhook,
+a Telegram chat (bot token + chat id) and/or a Slack incoming webhook. Set any one or several.
 First run only records what's already there (no flood); later runs post what's new."""
 import os, sys, json, time, html, re, urllib.request, urllib.error, xml.etree.ElementTree as ET
 
 FEEDS = [f.strip() for f in os.getenv("FEEDS", "https://hnrss.org/frontpage,https://www.rockpapershotgun.com/feed").split(",") if f.strip()]
 KEYWORDS = [k.strip().lower() for k in os.getenv("KEYWORDS", "").split(",") if k.strip()]  # empty = post everything
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL", "")
+TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")  # e.g. 123456789, -100123... for groups/channels, or @yourchannel
+SLACK = os.getenv("SLACK_WEBHOOK_URL", "")
+TG_API = os.getenv("TELEGRAM_API", "https://api.telegram.org")
 STATE = os.getenv("STATE_FILE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "seen_rss.json"))
 MAX_PER_RUN = int(os.getenv("MAX_PER_RUN", "10"))
 UA = {"User-Agent": "TaskToAgent-RSS-to-Discord/1.0 (+https://tasktoagent.com/agents/)"}
@@ -28,15 +33,26 @@ def items(url):
 
 def matches(i): return not KEYWORDS or any(k in (i["title"] + " " + i["text"]).lower() for k in KEYWORDS)
 
-def post(i):
-    msg = {"username": "RSS Bot", "content": f"**{i['title'][:200]}**\n{i['link']}"}
-    if not WEBHOOK or "--dry-run" in sys.argv: print(msg["content"]); return
-    req = urllib.request.Request(WEBHOOK, json.dumps(msg).encode(), {**UA, "Content-Type": "application/json"})
+def send(url, payload):
+    req = urllib.request.Request(url, json.dumps(payload).encode(), {**UA, "Content-Type": "application/json"})
     for attempt in range(3):
         try: urllib.request.urlopen(req, timeout=20).read(); return
         except urllib.error.HTTPError as e:
-            if e.code == 429: time.sleep(float(json.loads(e.read() or b"{}").get("retry_after", 2)) + 0.5); continue
+            if e.code == 429 and attempt < 2:
+                body = json.loads(e.read() or b"{}")
+                wait = body.get("retry_after") or body.get("parameters", {}).get("retry_after") or e.headers.get("Retry-After") or 2
+                time.sleep(float(wait) + 0.5); continue
             raise
+
+def post(i):
+    title, link = i["title"][:200], i["link"]
+    if not (WEBHOOK or (TG_TOKEN and TG_CHAT) or SLACK) or "--dry-run" in sys.argv: print(f"**{title}**\n{link}"); return
+    if WEBHOOK: send(WEBHOOK, {"username": "RSS Bot", "content": f"**{title}**\n{link}", "allowed_mentions": {"parse": []}})
+    if TG_TOKEN and TG_CHAT:
+        send(f"{TG_API}/bot{TG_TOKEN}/sendMessage", {"chat_id": TG_CHAT, "text": f"<b>{html.escape(title)}</b>\n{html.escape(link)}", "parse_mode": "HTML"})
+    if SLACK:
+        t = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        send(SLACK, {"text": f"*{t}*\n{link}" if not link else f"*<{link}|{t}>*"})
 
 def main():
     first = not os.path.exists(STATE); seen = set() if first else set(json.load(open(STATE)))

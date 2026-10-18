@@ -5,7 +5,7 @@ Eleven small, **tested** automations from [TaskToAgent](https://tasktoagent.com)
 | Agent | What it does | Guide |
 |---|---|---|
 | [free-game-alert](free-game-alert/) | Posts new free games (Epic, Steam, GOG, itch.io via GamerPower) and optional price drops to Discord | [Free Epic Games alerts in Discord](https://tasktoagent.com/guides/free-epic-games-discord-alert/) |
-| [rss-to-discord](rss-to-discord/) | Posts new RSS/Atom items (YouTube, Reddit, GitHub releases…) that match your keywords to Discord | [n8n RSS to Discord](https://tasktoagent.com/guides/n8n-rss-to-discord/) |
+| [rss-to-discord](rss-to-discord/) | Posts new RSS/Atom items (YouTube, Reddit, GitHub releases…) that match your keywords to Discord, Telegram or Slack | [n8n RSS to Discord](https://tasktoagent.com/guides/n8n-rss-to-discord/) |
 | [ai-news-digest](ai-news-digest/) | Emails you a morning AI-news digest, optionally summarised by any OpenAI-compatible model | [Daily AI news digest](https://tasktoagent.com/guides/ai-news-digest-email/) |
 | [inbox-summariser](inbox-summariser/) | Summarises your unread email over IMAP into one short message (local-only by default) | [Daily AI email summary](https://tasktoagent.com/guides/ai-email-summary-daily/) |
 | [attachment-saver](attachment-saver/) | Saves email attachments to folders, filtered by sender and file type. Never deletes mail | [Save attachments to a folder](https://tasktoagent.com/guides/save-email-attachments-to-folder/) |
