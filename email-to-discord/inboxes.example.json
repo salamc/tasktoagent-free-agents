@@ -2,5 +2,5 @@
  {"name": "Support inbox", "host": "imap.gmail.com", "port": 993, "user": "support@yourdomain.com", "password": "APP_PASSWORD",
   "folder": "INBOX", "webhook": "https://discord.com/api/webhooks/.../...", "from_contains": "", "subject_contains": "", "exclude": "newsletter,unsubscribe"},
  {"name": "Sales leads", "host": "imap.fastmail.com", "port": 993, "user": "you@fastmail.com", "password": "APP_PASSWORD",
-  "folder": "INBOX", "webhook": "https://discord.com/api/webhooks/.../...", "from_contains": "", "subject_contains": "quote,enquiry,booking", "exclude": ""}
+  "folder": "INBOX", "telegram_chat_id": "123456789", "slack_webhook": "https://hooks.slack.com/services/...", "from_contains": "", "subject_contains": "quote,enquiry,booking", "exclude": ""}
 ]
