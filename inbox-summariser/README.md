@@ -2,7 +2,7 @@
 
 > **Task:** "Every morning, summarise my unread emails and tell me which ones need a reply."
 
-Reads your unread emails from the last 24 hours over IMAP (Gmail, Outlook, Fastmail, iCloud...) without marking them as read, splits people from newsletters, optionally asks an AI to flag what needs a reply, and emails or prints the summary.
+Reads your unread emails from the last 24 hours over IMAP (Gmail, Outlook, Fastmail, iCloud...) without marking them as read, splits people from newsletters, groups replies into conversations, puts the emails that look like they need a reply first, optionally asks an AI for a short summary, and emails or prints it.
 
 Page: https://tasktoagent.com/agents/inbox-summariser/ · Made by TaskToAgent (https://tasktoagent.com) · MIT licence
 
@@ -25,8 +25,10 @@ Page: https://tasktoagent.com/agents/inbox-summariser/ · Made by TaskToAgent (h
 | `IMAP_HOST / IMAP_USER / IMAP_PASSWORD` | e.g. imap.gmail.com / you@gmail.com / your app password |
 | `IMAP_FOLDER` | Default INBOX |
 | `HOURS` | Default 24 |
+| `PEOPLE` | Optional: comma-separated addresses or @domains always treated as people, e.g. @myclient.com |
+| `BULK` | Optional: addresses or @domains always treated as newsletters |
 | `SMTP_HOST, EMAIL_TO` | Optional: email the summary (reuses your IMAP login by default) |
-| `OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL` | Optional AI summary |
+| `OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL` | Optional AI summary (only emails from people are sent, newsletters are just counted) |
 
 ## Run it on a schedule (every day at 08:00)
 - **macOS/Linux (cron):** `crontab -e`, then add
@@ -44,11 +46,13 @@ Page: https://tasktoagent.com/agents/inbox-summariser/ · Made by TaskToAgent (h
 - Ran through a fake IMAP server: confirmed the folder is opened read-only and emails are fetched with BODY.PEEK (never marked read).
 - AI and SMTP paths tested with mocks.
 - n8n (Gmail) workflow imported into a real n8n install. We didn't run it, because it needs your Gmail login.
+- 18 Oct 2026 update (asked for on Reddit): replies are grouped into one conversation (References/In-Reply-To, or the same subject without Re:/Fwd:), emails that ask something come first, newsletters are counted per sender, and you can pin senders with PEOPLE / BULK. Tested on 8 sample emails through a fake IMAP server and mock AI/SMTP: a 2-message thread shown once, 4 newsletters detected (List-Unsubscribe, List-Id, Precedence: bulk, Auto-Submitted), the AI request contained no newsletter text, AI failure fell back to the plain summary, no flags changed.
+- n8n summary step tested with Gmail-shaped data: grouped by Gmail threadId, Gmail Updates/Social/Forums tabs counted as notifications.
 
 ## Honest limits
 - We didn't connect to a real mailbox; that needs your login.
 - Your email text goes to the AI provider if you set an API key. Leave it unset to keep everything local.
-- The newsletter detection is a simple heuristic (List-Unsubscribe header, no-reply senders).
+- Newsletter detection and 'may need a reply' are simple rules (mailing-list headers, no-reply senders; question marks and phrases like 'can you' or 'by Friday'), not AI. Use PEOPLE / BULK to fix a sender, or add an API key for an AI summary.
 
 ## Want a custom version?
 Describe your task in one sentence at https://tasktoagent.com/ and we'll build and test it for you.
