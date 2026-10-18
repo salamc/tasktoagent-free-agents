@@ -24,6 +24,8 @@ Page: https://tasktoagent.com/agents/rss-to-discord/ · Made by TaskToAgent (htt
 | `FEEDS` | Comma-separated feed URLs (YouTube: https://www.youtube.com/feeds/videos.xml?channel_id=...) |
 | `KEYWORDS` | Comma-separated, case-insensitive; empty = everything |
 | `EXCLUDE` | Optional: skip items whose title or link contains any of these, e.g. -rc,beta,alpha |
+| `TITLE_ONLY` | Optional: 1 = match KEYWORDS in the title only (Reddit search feeds match the post text too) |
+| `FEED_PAUSE` | Seconds between feeds, default 3 (Reddit answers 429 to fast back-to-back requests) |
 | `DISCORD_WEBHOOK_URL` | Your Discord webhook (optional if you use Telegram or Slack) |
 | `TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID` | Optional: Telegram bot token from @BotFather and the chat, group or channel ID (or @channelname) to post to |
 | `SLACK_WEBHOOK_URL` | Optional: Slack incoming webhook URL |
@@ -46,6 +48,7 @@ Page: https://tasktoagent.com/agents/rss-to-discord/ · Made by TaskToAgent (htt
 - Handles Discord rate limits (HTTP 429, then retry).
 - 18 Oct 2026: added Telegram and Slack outputs. Tested against mock Discord, Telegram Bot API and Slack webhook servers: same item posted once to each, Telegram 429 retry_after honoured, keyword filter and first-run seeding unchanged.
 - 18 Oct 2026: added EXCLUDE (skip items whose title or link contains a word, e.g. -rc for GitHub pre-releases). Tested on ollama's live releases.atom with a mock Telegram API: release candidates and a pre-release titled with the final version were skipped, 2 real releases sent once after a 429 retry, no repeats.
+- 18 Oct 2026: added TITLE_ONLY, a pause between feeds and one retry when a feed answers 429. On live Reddit search feeds (r/selfhosted search for telegram), only 3 of the 25 results had the word in the title (the rest matched on the post text); TITLE_ONLY=1 kept just those 3. Three Reddit feeds in one run, 3 s apart, fetched without a 429 (fetched back-to-back, Reddit refused the second feed). Telegram-only run against a mock Bot API: 2 new posts sent once after a 429 retry, no repeats.
 - n8n workflow imported and run end to end in a real n8n install (Discord mocked).
 - 16 Oct 2026 fix: the n8n file's 'Only new' step had a wrong setting and could repost old items. Fixed and re-tested as an active workflow. Please re-download if you got it earlier.
 

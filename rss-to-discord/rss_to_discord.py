@@ -15,13 +15,24 @@ SLACK = os.getenv("SLACK_WEBHOOK_URL", "")
 TG_API = (os.getenv("TELEGRAM_API") or "https://api.telegram.org")
 STATE = (os.getenv("STATE_FILE") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "seen_rss.json"))
 MAX_PER_RUN = int((os.getenv("MAX_PER_RUN") or "10"))
+TITLE_ONLY = (os.getenv("TITLE_ONLY") or "0").lower() in ("1", "true", "yes")  # match KEYWORDS in the title only, not the post text
+FEED_PAUSE = float(os.getenv("FEED_PAUSE") or "3")  # seconds between feeds; Reddit answers 429 to fast back-to-back requests
 UA = {"User-Agent": "TaskToAgent-RSS-to-Discord/1.0 (+https://tasktoagent.com/agents/)"}
 A = "{http://www.w3.org/2005/Atom}"
 
 def clean(s): return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", s or ""))).strip()
 
+def fetch(url):
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r: return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code != 429 or attempt: raise
+            wait = min(float(e.headers.get("Retry-After") or 15), 60)
+            print(f"note: {url}: 429, retrying in {wait:.0f}s", file=sys.stderr); time.sleep(wait)
+
 def items(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r: root = ET.fromstring(r.read())
+    root = ET.fromstring(fetch(url))
     for it in root.iter("item"):
         yield {"id": (it.findtext("guid") or it.findtext("link") or "").strip(), "title": clean(it.findtext("title")),
                "link": (it.findtext("link") or "").strip(), "text": clean(it.findtext("description"))}
@@ -34,7 +45,8 @@ def items(url):
 
 def matches(i):
     if any(x in (i["title"] + " " + i["link"]).lower() for x in EXCLUDE): return False
-    return not KEYWORDS or any(k in (i["title"] + " " + i["text"]).lower() for k in KEYWORDS)
+    hay = i["title"] if TITLE_ONLY else i["title"] + " " + i["text"]
+    return not KEYWORDS or any(k in hay.lower() for k in KEYWORDS)
 
 def send(url, payload):
     req = urllib.request.Request(url, json.dumps(payload).encode(), {**UA, "Content-Type": "application/json"})
@@ -60,7 +72,8 @@ def post(i):
 def main():
     first = not os.path.exists(STATE); seen = set() if first else set(json.load(open(STATE)))
     new = []
-    for f in FEEDS:
+    for n, f in enumerate(FEEDS):
+        if n: time.sleep(FEED_PAUSE)
         try: new += [i for i in items(f) if i["id"] and i["id"] not in seen]
         except Exception as e: print(f"warn: {f}: {e}", file=sys.stderr)
     if first and "--post-existing" not in sys.argv and "--dry-run" not in sys.argv:
