@@ -1,14 +1,14 @@
-# Free game & deal alert - free TaskToAgent agent
+# Free game & deal alert (Discord, Telegram, Slack) - free TaskToAgent agent
 
-> **Task:** "Ping my Discord whenever a game goes free on Epic or anywhere else, or a wishlist game drops below my price."
+> **Task:** "Ping my Discord (or Telegram, or Slack) whenever a game goes free on Epic or anywhere else, or a wishlist game drops below my price."
 
-Checks Epic Games Store's free-games feed and GamerPower giveaways (Steam, GOG, Epic, itch and more) every few hours, and optionally IsThereAnyDeal prices for games you name. Only new finds get posted to your Discord channel.
+Checks Epic Games Store's free-games feed and GamerPower giveaways (Steam, GOG, Epic, itch and more) every few hours, and optionally IsThereAnyDeal prices for games you name. Only new finds get posted to your Discord channel, a Telegram chat, group or channel, and/or Slack.
 
 Page: https://tasktoagent.com/agents/free-game-alert/ · Made by TaskToAgent (https://tasktoagent.com) · MIT licence
 
 ## What you need
 - Python 3.9+ (no extra packages) or n8n
-- A Discord server where you can create a webhook (Server settings, then Integrations, then Webhooks)
+- Where to post: a Discord webhook (Server settings, then Integrations, then Webhooks), a Telegram bot token + chat ID (from @BotFather), or a Slack incoming webhook URL (any one, or several; Telegram and Slack are in the Python script)
 - Optional: a free IsThereAnyDeal API key for wishlist price alerts
 
 ## 5-minute setup (Python)
@@ -22,7 +22,9 @@ Page: https://tasktoagent.com/agents/free-game-alert/ · Made by TaskToAgent (ht
 ### Settings
 | Variable | What it does |
 |---|---|
-| `DISCORD_WEBHOOK_URL` | Your Discord webhook URL (leave empty to just print) |
+| `DISCORD_WEBHOOK_URL` | Your Discord webhook URL (leave all destinations empty to just print) |
+| `TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID` | Optional: Telegram bot token from @BotFather and the chat, group or channel ID (or @channelname) |
+| `SLACK_WEBHOOK_URL` | Optional: Slack incoming webhook URL |
 | `GAMERPOWER_PLATFORMS` | pc, steam, epic-games-store, gog, itchio... default pc |
 | `COUNTRY` | Store country, default US |
 | `ITAD_API_KEY` | Optional IsThereAnyDeal key |
@@ -46,12 +48,14 @@ Page: https://tasktoagent.com/agents/free-game-alert/ · Made by TaskToAgent (ht
 - Second run posted nothing (dedupe works).
 - n8n workflow imported and run end to end in a real n8n install, posting 14 alerts to a mock Discord webhook.
 - 16 Oct 2026 fix: the n8n file's 'Only new' step had a wrong setting and could repost old games. Fixed and re-tested as an active workflow (the second run posts nothing). Please re-download if you got it earlier.
+- 18 Oct 2026: added Telegram and Slack outputs, Discord/Telegram rate-limit (429) retries and @everyone protection. Tested with the live Epic and GamerPower feeds (16 games) against mock Discord, Telegram and Slack servers that each answered 429 first: every batch posted once to all three. If every destination fails, nothing is marked as sent, so it retries next run; if only one fails, the others still get it and nothing repeats.
 
 ## Honest limits
 - The IsThereAnyDeal part needs your own free key, so we couldn't test it live; the code follows ITAD's documented v1/v3 endpoints.
 - Epic's feed is unofficial and can change without notice.
 - Doesn't read your Steam wishlist automatically; you list the titles yourself.
-- We tested against a mock Discord webhook, not a real server.
+- We tested against mock Discord, Telegram and Slack servers, not real ones.
+- Telegram and Slack work in the Python script; the n8n workflow posts to Discord (swap its last node for n8n's Telegram or Slack node).
 
 ## Want a custom version?
 Describe your task in one sentence at https://tasktoagent.com/ and we'll build and test it for you.

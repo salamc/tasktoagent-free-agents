@@ -2,13 +2,18 @@
 """TaskToAgent - Free game & deal alert. Python 3.9+, standard library only.
 Checks Epic Games Store free games and GamerPower giveaways (no key needed), and optionally
 IsThereAnyDeal for your wishlist titles hitting a price (needs a free ITAD API key).
-Posts anything new to a Discord webhook (or prints it). Remembers what it already sent in a state file."""
-import os, sys, json, time, urllib.request, urllib.parse
+Posts anything new to a Discord webhook, a Telegram chat (bot token + chat id) and/or a Slack incoming webhook
+(or prints it). Remembers what it already sent in a state file."""
+import os, sys, json, time, html, urllib.request, urllib.parse, urllib.error
 from datetime import datetime, timezone
 
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL", "")
 STATE = (os.getenv("STATE_FILE") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "seen_games.json"))
 PLATFORMS = (os.getenv("GAMERPOWER_PLATFORMS") or "pc")          # e.g. pc, steam, epic-games-store, gog
+TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")  # e.g. 123456789, -100123... for groups/channels, or @yourchannel
+SLACK = os.getenv("SLACK_WEBHOOK_URL", "")
+TG_API = (os.getenv("TELEGRAM_API") or "https://api.telegram.org")
 ITAD_KEY = os.getenv("ITAD_API_KEY", "")
 WATCH = [t.strip() for t in os.getenv("WATCH_GAMES", "").split(",") if t.strip()]  # titles for ITAD
 MAX_PRICE = float((os.getenv("MAX_PRICE") or "10"))
@@ -57,16 +62,51 @@ def itad():
         except Exception as e: print(f"warn: ITAD {t}: {e}", file=sys.stderr)
     return out
 
+def send(url, payload):
+    req = urllib.request.Request(url, json.dumps(payload).encode(), {**UA, "Content-Type": "application/json"})
+    for attempt in range(3):
+        try: urllib.request.urlopen(req, timeout=20).read(); return
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 2:  # rate limited: wait as told, then retry
+                try: body = json.loads(e.read() or b"{}")
+                except ValueError: body = {}
+                wait = body.get("retry_after") or body.get("parameters", {}).get("retry_after") or e.headers.get("Retry-After") or 2
+                time.sleep(min(float(wait), 60) + 0.5); continue
+            raise
+
+def deliver(batch):
+    """Post one batch everywhere configured. True if at least one destination got it."""
+    ok = False
+    dests = []
+    if WEBHOOK:
+        embeds = [{"title": i["title"][:250], "url": i["url"], "description": f"{i['note']}\n{i['where']}", "color": 0x39FF88} for i in batch]
+        dests.append(("Discord", WEBHOOK, {"username": "Free Game Alert", "content": "🎮 New free games / deals", "embeds": embeds,
+                                          "allowed_mentions": {"parse": []}}))
+    if TG_TOKEN and TG_CHAT:
+        lines = [f'🎮 <b><a href="{html.escape(i["url"], quote=True)}">{html.escape(i["title"][:200])}</a></b>\n{html.escape(i["note"])} · {html.escape(i["where"])}' for i in batch]
+        dests.append(("Telegram", f"{TG_API}/bot{TG_TOKEN}/sendMessage",
+                      {"chat_id": TG_CHAT, "text": "\n\n".join(lines), "parse_mode": "HTML", "disable_web_page_preview": len(batch) > 1}))
+    if SLACK:
+        esc = lambda t: t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        lines = [f"• *<{i['url']}|{esc(i['title'][:200])}>*  {esc(i['note'])} · {esc(i['where'])}" for i in batch]
+        dests.append(("Slack", SLACK, {"text": ":video_game: New free games / deals\n" + "\n".join(lines)}))
+    for name, url, payload in dests:
+        try: send(url, payload); ok = True
+        except Exception as e: print(f"warn: {name}: {e}", file=sys.stderr)
+    return ok
+
 def post(items):
-    if not WEBHOOK or "--dry-run" in sys.argv:
+    """Returns the items that were delivered (so only those get marked as seen)."""
+    if not (WEBHOOK or (TG_TOKEN and TG_CHAT) or SLACK) or "--dry-run" in sys.argv:
         for i in items: print(f"[{i['where']}] {i['title']} - {i['note']}\n  {i['url']}")
-        return
+        return []
+    done = []
     for k in range(0, len(items), 10):  # Discord allows 10 embeds per message
-        embeds = [{"title": i["title"][:250], "url": i["url"], "description": f"{i['note']}\n{i['where']}", "color": 0x39FF88} for i in items[k:k+10]]
-        req = urllib.request.Request(WEBHOOK, json.dumps({"username": "Free Game Alert", "content": "🎮 New free games / deals", "embeds": embeds}).encode(),
-                                     {**UA, "Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=20).read(); time.sleep(1)
-    print(f"posted {len(items)} item(s) to Discord")
+        batch = items[k:k+10]
+        if deliver(batch): done += batch
+        time.sleep(1)
+    print(f"posted {len(done)} of {len(items)} new item(s)" + ("" if len(done) == len(items) else "; the rest will be retried next run"))
+    return done
 
 def main():
     seen = set(json.load(open(STATE))) if os.path.exists(STATE) else set()
@@ -76,7 +116,7 @@ def main():
         except Exception as e: print(f"warn: {src.__name__}: {e}", file=sys.stderr)
     new = [i for i in found if i["id"] not in seen]
     if not new: print("nothing new"); return
-    post(new)
-    if "--dry-run" not in sys.argv: json.dump(sorted(seen | {i["id"] for i in new}), open(STATE, "w"))
+    done = post(new)
+    if done: json.dump(sorted(seen | {i["id"] for i in done}), open(STATE, "w"))
 
 if __name__ == "__main__": main()
