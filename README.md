@@ -32,7 +32,7 @@ n8n: **Workflows → Import from file → `<agent>.n8n.json`**, then follow the 
 Each folder's README lists what we tested and the **honest limits**, meaning what we couldn't test without real credentials.
 
 ## n8n error fixes (each tested on a real n8n 2.43.7 instance)
-- [n8n error messages and how to fix them (index of 114 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
+- [n8n error messages and how to fix them (index of 124 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
 - [n8n webhook not working? Test URL vs production URL and every 404](https://tasktoagent.com/guides/n8n-webhook-not-working-404/)
 - [n8n Code node: "Code doesn't return items properly" and 10 more](https://tasktoagent.com/guides/n8n-code-node-errors-return-items/)
 - [n8n HTTP Request node errors: 401, 404, ECONNREFUSED, SSL](https://tasktoagent.com/guides/n8n-http-request-node-errors/)
@@ -52,6 +52,7 @@ Each folder's README lists what we tested and the **honest limits**, meaning wha
 - [n8n 429 Too Many Requests: rate limits and retries](https://tasktoagent.com/guides/n8n-429-rate-limit-retry/)
 - [n8n binary data in queue mode: worker "File not found"](https://tasktoagent.com/guides/n8n-binary-data-queue-mode/)
 - [n8n Python Code node: task runner errors (venv missing, Missing auth token)](https://tasktoagent.com/guides/n8n-python-code-node-task-runner-errors/)
+- [n8n Form Trigger not working (Problem loading form, Workflow could not be started)](https://tasktoagent.com/guides/n8n-form-trigger-not-working/)
 - [n8n Execute Workflow / sub-workflow not working](https://tasktoagent.com/guides/n8n-execute-workflow-sub-workflow-not-working/)
 - [n8n timezone and date wrong (GENERIC_TIMEZONE, Luxon)](https://tasktoagent.com/guides/n8n-timezone-date-wrong/)
 
