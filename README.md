@@ -32,7 +32,7 @@ n8n: **Workflows → Import from file → `<agent>.n8n.json`**, then follow the 
 Each folder's README lists what we tested and the **honest limits**, meaning what we couldn't test without real credentials.
 
 ## n8n error fixes (each tested on a real n8n 2.43.7 instance)
-- [n8n error messages and how to fix them (index of 154 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
+- [n8n error messages and how to fix them (index of 172 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
 - [n8n webhook not working? Test URL vs production URL and every 404](https://tasktoagent.com/guides/n8n-webhook-not-working-404/)
 - [n8n Code node: "Code doesn't return items properly" and 10 more](https://tasktoagent.com/guides/n8n-code-node-errors-return-items/)
 - [n8n HTTP Request node errors: 401, 404, ECONNREFUSED, SSL](https://tasktoagent.com/guides/n8n-http-request-node-errors/)
@@ -55,6 +55,7 @@ Each folder's README lists what we tested and the **honest limits**, meaning wha
 - [n8n Form Trigger not working (Problem loading form, Workflow could not be started)](https://tasktoagent.com/guides/n8n-form-trigger-not-working/)
 - [n8n Wait node not resuming (401 Invalid token, 409 already finished, resume URL on localhost)](https://tasktoagent.com/guides/n8n-wait-node-not-resuming/)
 - [n8n Postgres node errors (connection refused, password authentication failed, self-signed certificate, relation does not exist)](https://tasktoagent.com/guides/n8n-postgres-node-errors/)
+- [n8n MySQL node errors (ECONNREFUSED ::1, Access denied for user, self-signed certificate, table doesn't exist)](https://tasktoagent.com/guides/n8n-mysql-node-errors/)
 - [n8n Execute Workflow / sub-workflow not working](https://tasktoagent.com/guides/n8n-execute-workflow-sub-workflow-not-working/)
 - [n8n timezone and date wrong (GENERIC_TIMEZONE, Luxon)](https://tasktoagent.com/guides/n8n-timezone-date-wrong/)
 
