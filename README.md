@@ -31,11 +31,33 @@ n8n: **Workflows → Import from file → `<agent>.n8n.json`**, then follow the 
 
 Each folder's README lists what we tested and the **honest limits**, meaning what we couldn't test without real credentials.
 
+## n8n error fixes (each tested on a real n8n 2.43.7 instance)
+- [n8n error messages and how to fix them (index of 91 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
+- [n8n webhook not working? Test URL vs production URL and every 404](https://tasktoagent.com/guides/n8n-webhook-not-working-404/)
+- [n8n Code node: "Code doesn't return items properly" and 10 more](https://tasktoagent.com/guides/n8n-code-node-errors-return-items/)
+- [n8n HTTP Request node errors: 401, 404, ECONNREFUSED, SSL](https://tasktoagent.com/guides/n8n-http-request-node-errors/)
+- [n8n expression errors and empty values](https://tasktoagent.com/guides/n8n-expression-errors-undefined/)
+- [n8n next node not running? Empty output and Always Output Data](https://tasktoagent.com/guides/n8n-next-node-not-running-no-output/)
+- [n8n Merge node not working after an IF](https://tasktoagent.com/guides/n8n-merge-node-if-node-not-working/)
+- [n8n Loop Over Items not working](https://tasktoagent.com/guides/n8n-loop-over-items-not-working/)
+- [n8n Schedule Trigger not firing](https://tasktoagent.com/guides/n8n-schedule-trigger-not-working/)
+- [n8n binary data not found](https://tasktoagent.com/guides/n8n-binary-data-not-found/)
+- [n8n Email Trigger (IMAP) attachments: attachment_0](https://tasktoagent.com/guides/n8n-email-trigger-imap-attachments/)
+- [n8n OAuth2 redirect_uri_mismatch and callback errors](https://tasktoagent.com/guides/n8n-oauth2-redirect-uri-mismatch/)
+- [n8n "Credentials could not be decrypted"](https://tasktoagent.com/guides/n8n-credentials-could-not-be-decrypted/)
+- [n8n "Connection lost" behind a reverse proxy](https://tasktoagent.com/guides/n8n-connection-lost-reverse-proxy/)
+- [n8n won't start or you can't log in (self-hosting)](https://tasktoagent.com/guides/n8n-self-hosted-not-starting-errors/)
+- [n8n broke after updating to 2.x](https://tasktoagent.com/guides/n8n-update-upgrade-errors/)
+- [n8n queue mode: Redis and worker errors](https://tasktoagent.com/guides/n8n-queue-mode-redis-worker-errors/)
+- [n8n 429 Too Many Requests: rate limits and retries](https://tasktoagent.com/guides/n8n-429-rate-limit-retry/)
+
 ## More guides
 - [n8n: stop posting the same item twice (Remove Duplicates across executions)](https://tasktoagent.com/guides/n8n-remove-duplicates-previous-executions/), the bug we hit in our own RSS and free-games workflows and how we fixed it
 - [Post new YouTube videos to Discord automatically](https://tasktoagent.com/guides/youtube-uploads-to-discord/)
 - [Discord webhooks for beginners](https://tasktoagent.com/guides/discord-webhook-beginners/)
 - [How to build an AI agent without coding](https://tasktoagent.com/guides/build-ai-agent-without-coding/)
+- [Hacker News daily digest by email, filtered by keywords](https://tasktoagent.com/guides/hacker-news-daily-digest-email/) (free Python script)
+- [RSS to email daily digest](https://tasktoagent.com/guides/rss-to-email-daily-digest/) (free Python script)
 - [Run a Python script on a schedule](https://tasktoagent.com/guides/run-python-script-on-schedule/) (cron, Task Scheduler, GitHub Actions)
 
 ## Want one for your own task?
