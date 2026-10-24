@@ -32,7 +32,7 @@ n8n: **Workflows → Import from file → `<agent>.n8n.json`**, then follow the 
 Each folder's README lists what we tested and the **honest limits**, meaning what we couldn't test without real credentials.
 
 ## n8n error fixes (each tested on a real n8n 2.43.7 instance)
-- [n8n error messages and how to fix them (index of 287 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
+- [n8n error messages and how to fix them (index of 288 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
 - [n8n webhook not working? Test URL vs production URL and every 404](https://tasktoagent.com/guides/n8n-webhook-not-working-404/)
 - [n8n Code node: "Code doesn't return items properly" and 10 more](https://tasktoagent.com/guides/n8n-code-node-errors-return-items/)
 - [n8n HTTP Request node errors: 401, 404, ECONNREFUSED, SSL](https://tasktoagent.com/guides/n8n-http-request-node-errors/)
@@ -64,6 +64,7 @@ Each folder's README lists what we tested and the **honest limits**, meaning wha
 - [n8n Switch node not working (unmatched items dropped silently without a Fallback Output, only the first matching output used, trailing spaces vs Ignore Case, "Wrong type: is a string but was expecting a number", "The ouput 2 is not allowed", null routed as 0; 30 real runs)](https://tasktoagent.com/guides/n8n-switch-node-not-working/)
 - [n8n Filter node not working (all items discarded with a green run, trailing spaces vs Case Sensitive, "Wrong type: is a string but was expecting a number", On Error: Continue hiding errors, null/empty/exists checks; 32 real runs)](https://tasktoagent.com/guides/n8n-filter-node-not-working/)
 - [n8n HTML Extract not working (JavaScript-built pages return "" with a green run, only the first match without Return Array, "No property named \"data\" exists!" for binary pages, XPath "Empty sub-selector", case-sensitive classes, tables losing rows, relative links; 32 real runs)](https://tasktoagent.com/guides/n8n-html-extract-not-working/)
+- [n8n Compare Datasets not working (string vs number ids send every row to In A only / In B only with a green run, Fuzzy Compare fixes types but not case or spaces, sync fields push every match to Different until Fields to Skip Comparing, the default Different output is a diff object, duplicates leak into B only; 40 real runs)](https://tasktoagent.com/guides/n8n-compare-datasets-not-working/)
 - [n8n Extract From File (CSV) not working (semicolon file read as one column, BOM "\ufeffname" first key, Latin-1 accents, "Invalid Opening Quote", "Invalid Record Length", "has no binary field 'data'", XLSX sheet and JSON array pitfalls; 32 real runs)](https://tasktoagent.com/guides/n8n-extract-from-file-csv-not-working/)
 - [n8n Execute Command and Read/Write Files from Disk errors (Execute Command missing in n8n 2.x / NODES_EXCLUDE, only stderr on exit code, ~/.n8n-files is the OS HOME, 0 items on missing paths)](https://tasktoagent.com/guides/n8n-execute-command-read-write-file-errors/)
 - [n8n MongoDB node errors (Authentication failed / authSource, Invalid JSON in 'Query', unknown operator $oid, Update that changes nothing)](https://tasktoagent.com/guides/n8n-mongodb-node-errors/)
