@@ -32,7 +32,7 @@ n8n: **Workflows → Import from file → `<agent>.n8n.json`**, then follow the 
 Each folder's README lists what we tested and the **honest limits**, meaning what we couldn't test without real credentials.
 
 ## n8n error fixes (each tested on a real n8n 2.43.7 instance)
-- [n8n error messages and how to fix them (index of 264 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
+- [n8n error messages and how to fix them (index of 273 exact errors)](https://tasktoagent.com/guides/n8n-error-messages/)
 - [n8n webhook not working? Test URL vs production URL and every 404](https://tasktoagent.com/guides/n8n-webhook-not-working-404/)
 - [n8n Code node: "Code doesn't return items properly" and 10 more](https://tasktoagent.com/guides/n8n-code-node-errors-return-items/)
 - [n8n HTTP Request node errors: 401, 404, ECONNREFUSED, SSL](https://tasktoagent.com/guides/n8n-http-request-node-errors/)
@@ -61,6 +61,7 @@ Each folder's README lists what we tested and the **honest limits**, meaning wha
 - [n8n Send Email (SMTP) errors ("The connection timed out", "wrong version number", self-signed certificate, 535 Invalid login, 530 Authentication required, empty body, n8n footer, missing attachments)](https://tasktoagent.com/guides/n8n-send-email-smtp-errors/)
 - [n8n HTTP Request pagination not working (endless loops with "Response Is Empty", "The returned response was identical 5x", "'null' is not a valid URL", duplicate first page, $pageCount, cursor, next URL, Link header, offset)](https://tasktoagent.com/guides/n8n-http-request-pagination-not-working/)
 - [n8n Edit Fields (Set) node not working (other fields dropped, "expects a number but we got", Boolean/Array type errors, {{ }} left as text in Fixed mode, null from typos, dot notation, "The 'JSON Output' in item 0 contains invalid JSON")](https://tasktoagent.com/guides/n8n-edit-fields-set-node-not-working/): 29 real runs on n8n 2.43.7.
+- [n8n Switch node not working (unmatched items dropped silently without a Fallback Output, only the first matching output used, trailing spaces vs Ignore Case, "Wrong type: is a string but was expecting a number", "The ouput 2 is not allowed", null routed as 0; 30 real runs)](https://tasktoagent.com/guides/n8n-switch-node-not-working/)
 - [n8n Execute Command and Read/Write Files from Disk errors (Execute Command missing in n8n 2.x / NODES_EXCLUDE, only stderr on exit code, ~/.n8n-files is the OS HOME, 0 items on missing paths)](https://tasktoagent.com/guides/n8n-execute-command-read-write-file-errors/)
 - [n8n MongoDB node errors (Authentication failed / authSource, Invalid JSON in 'Query', unknown operator $oid, Update that changes nothing)](https://tasktoagent.com/guides/n8n-mongodb-node-errors/)
 - [n8n Postgres Trigger not firing (relation does not exist, permission denied, LISTEN channel case, stops after a restart)](https://tasktoagent.com/guides/n8n-postgres-trigger-not-working/)
