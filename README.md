@@ -121,6 +121,8 @@ Each folder's README lists what we tested and the **honest limits**, meaning wha
 - [n8n timezone and date wrong (GENERIC_TIMEZONE, Luxon)](https://tasktoagent.com/guides/n8n-timezone-date-wrong/)
 
 ## More guides
+- [Send RSS feeds to Slack with a keyword filter (Slack's RSS app can't filter; incoming webhook + rss-to-discord agent)](https://tasktoagent.com/guides/rss-to-slack-keyword-filter/)
+- [Forward emails to a Slack channel on the free plan (incoming webhook + email-to-discord agent)](https://tasktoagent.com/guides/forward-email-to-slack/)
 - [n8n: stop posting the same item twice (Remove Duplicates across executions)](https://tasktoagent.com/guides/n8n-remove-duplicates-previous-executions/), the bug we hit in our own RSS and free-games workflows and how we fixed it
 - [Post new YouTube videos to Discord automatically](https://tasktoagent.com/guides/youtube-uploads-to-discord/)
 - [Discord webhooks for beginners](https://tasktoagent.com/guides/discord-webhook-beginners/)
