@@ -21,6 +21,8 @@ UA = {"User-Agent": "TaskToAgent-RSS-to-Discord/1.0 (+https://tasktoagent.com/ag
 A = "{http://www.w3.org/2005/Atom}"
 
 def clean(s): return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", s or ""))).strip()
+TAGS = re.compile(r"</?(?:b|i|u|em|strong|span|a|code|br|sup|sub|p|font|small|mark)\b[^>]*>", re.I)
+def clean_title(s): return re.sub(r"\s+", " ", html.unescape(TAGS.sub("", s or ""))).strip()  # keep text like "<tips>" or "a < b"
 
 def fetch(url):
     for attempt in range(2):
@@ -34,13 +36,13 @@ def fetch(url):
 def items(url):
     root = ET.fromstring(fetch(url))
     for it in root.iter("item"):
-        yield {"id": (it.findtext("guid") or it.findtext("link") or "").strip(), "title": clean(it.findtext("title")),
+        yield {"id": (it.findtext("guid") or it.findtext("link") or "").strip(), "title": clean_title(it.findtext("title")),
                "link": (it.findtext("link") or "").strip(), "text": clean(it.findtext("description"))}
     for e in root.iter(A + "entry"):
         l = e.find(A + "link[@rel='alternate']")
         if l is None: l = e.find(A + "link")
         href = l.get("href", "") if l is not None else ""
-        yield {"id": (e.findtext(A + "id") or href).strip(), "title": clean(e.findtext(A + "title")), "link": href,
+        yield {"id": (e.findtext(A + "id") or href).strip(), "title": clean_title(e.findtext(A + "title")), "link": href,
                "text": clean(e.findtext(A + "summary") or e.findtext(A + "content"))}
 
 def matches(i):
@@ -71,7 +73,7 @@ def post(i):
 
 def main():
     first = not os.path.exists(STATE); seen = set() if first else set(json.load(open(STATE)))
-    new = []
+    new, failed = [], set()
     for n, f in enumerate(FEEDS):
         if n: time.sleep(FEED_PAUSE)
         try: new += [i for i in items(f) if i["id"] and i["id"] not in seen]
@@ -80,8 +82,13 @@ def main():
         print(f"first run: remembered {len(new)} existing item(s), nothing posted")
     else:
         hits = [i for i in new if matches(i)][:MAX_PER_RUN]
-        for i in hits: post(i); time.sleep(0.6)
-        print(f"{len(hits)} new matching item(s) posted")
-    if "--dry-run" not in sys.argv: json.dump(sorted(seen | {i["id"] for i in new})[-5000:], open(STATE, "w"))
+        for i in hits:
+            try: post(i)
+            except Exception as e:  # one bad send must not lose the rest: skip it, retry it next run
+                failed.add(i["id"]); print(f"error: posting {i['link'] or i['title']!r}: {e}", file=sys.stderr)
+            time.sleep(0.6)
+        print(f"{len(hits) - len(failed)} new matching item(s) posted" + (f", {len(failed)} failed (will retry next run)" if failed else ""))
+    if "--dry-run" not in sys.argv: json.dump(sorted(seen | {i["id"] for i in new if i["id"] not in failed})[-5000:], open(STATE, "w"))
+    if failed: sys.exit(1)
 
 if __name__ == "__main__": main()
